@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview Practice Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm and focused, like a real panel call; nothing on screen that isn't part of the interview
+   IDEA: a video-interview room anyone can set up: pick the interview, drop in a CV, face a two-person panel
+   PICTURE: the live tiles themselves (panelists who talk, blink and nod; your own camera)
+   COLOUR and TYPE: call-app charcoal stage, one blue speaking ring, red only for End and Recording; Inter
+   LAYOUT: 2x2 stage (panel above, you and the question below), call bar pinned at the bottom; set-up and summary as overlays */
+:root{color-scheme:dark;--stage:#131417;--tile:#1f2126;--tile2:#2a2d34;--card:#1b1d21;--ink:#f2f3f5;--mute:#a3a7b0;--line:#30333a;--accent:#4c9aff;--danger:#e5484d;--warn:#f5a524}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.app{display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:100vh;height:100dvh}
+.top{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:14px;white-space:nowrap}
+.top b{font-weight:600}
+.top .sec{color:var(--mute);overflow:hidden;text-overflow:ellipsis}
+.top .sp{flex:1}
+.top .num{color:var(--mute);font-variant-numeric:tabular-nums}
+.rec{display:inline-flex;align-items:center;gap:6px;color:#ffb3b5;font-size:13px}
+.rec i{width:9px;height:9px;border-radius:50%;background:var(--danger);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:10px;padding:10px}
+.tile{position:relative;background:var(--tile);border-radius:14px;overflow:hidden}
+.tile::after{content:"";position:absolute;inset:0;border-radius:inherit;border:3px solid transparent;pointer-events:none;transition:border-color .2s;z-index:4}
+.tile.speaking::after{border-color:var(--accent)}
+.av,.photo{position:absolute;inset:0;width:100%;height:100%}
+.photo{object-fit:cover;display:none}
+.tile.has-photo .photo{display:block}.tile.has-photo .av{display:none}
+.plate{position:absolute;left:10px;bottom:10px;z-index:3;display:flex;align-items:center;gap:8px;max-width:calc(100% - 20px);background:rgba(12,13,15,.68);padding:5px 10px;border-radius:8px;font-size:13px;white-space:nowrap}
+.plate .role{color:var(--mute);overflow:hidden;text-overflow:ellipsis}
+.bars{display:inline-flex;gap:2px;align-items:flex-end;height:12px;flex:none}
+.bars i{width:3px;height:3px;border-radius:1px;background:var(--mute)}
+.speaking .bars i{background:var(--accent);animation:bar .7s ease-in-out infinite}
+.speaking .bars i:nth-child(2){animation-delay:-.23s}.speaking .bars i:nth-child(3){animation-delay:-.46s}
+@keyframes bar{50%{height:12px}}
+.av .eyes{transform-box:fill-box;transform-origin:center;animation:blink 5.3s infinite}
+#t-od .av .eyes{animation-duration:6.4s;animation-delay:-2.1s}
+@keyframes blink{0%,95%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+.av .body{transform-box:view-box;transform-origin:160px 180px;animation:breathe 4.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:translateY(-1.2px)}}
+.av .head,.av .hairb{transform-box:view-box;transform-origin:160px 124px}
+.av .open{transform-box:fill-box;transform-origin:center;transform:scaleY(0)}
+.speaking .av .open{animation:talk .46s ease-in-out infinite}
+#t-od.speaking .av .open{animation-duration:.53s}
+@keyframes talk{0%,100%{transform:scaleY(.15)}25%{transform:scaleY(.85)}50%{transform:scaleY(.3)}75%{transform:scaleY(1)}}
+.speaking .av .head,.speaking .av .hairb{animation:tilt 3.4s ease-in-out infinite}
+@keyframes tilt{30%{transform:rotate(1.3deg)}70%{transform:rotate(-1deg)}}
+.listening .av .head,.listening .av .hairb{animation:nod 7s ease-in-out infinite}
+#t-od.listening .av .head{animation-duration:8.6s;animation-delay:-3.3s}
+@keyframes nod{0%,82%,100%{transform:translateY(0)}86%{transform:translateY(2.4px) rotate(.5deg)}90%{transform:translateY(0)}94%{transform:translateY(1.8px)}98%{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.av .body,.speaking .av .head,.speaking .av .hairb,.listening .av .head,.listening .av .hairb,.rec i{animation:none}}
+.self video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.mirror{transform:scaleX(-1)}
+.camoff{position:absolute;inset:0;display:grid;place-items:center;background:var(--tile);z-index:2}
+.camoff span{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;background:#3a4252;font-size:34px;font-weight:600}
+.timer{position:absolute;top:10px;right:10px;z-index:3;background:rgba(12,13,15,.72);padding:4px 10px;border-radius:8px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.timer.warn{color:var(--warn)}.timer.over{color:#ff8a8d}
+.lvl{display:inline-block;width:34px;height:6px;border-radius:3px;background:#3a3d44;overflow:hidden;flex:none}
+.lvl i{display:block;height:100%;width:0;background:var(--accent);transition:width .08s}
+.mutetag{color:#ff8a8d}
+.qcard{display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:var(--card)}
+.qhead{display:flex;justify-content:space-between;gap:12px;color:var(--mute);font-size:13px}
+.qhead span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog{height:3px;background:var(--line);border-radius:2px;overflow:hidden;flex:none}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.asker{margin:2px 0 0;color:var(--mute);font-size:13px}
+.qtext{margin:0;font-size:clamp(16px,1.4vw,20px);line-height:1.38;font-weight:600;text-wrap:pretty;max-height:40%;overflow:auto}
+.status{display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--mute)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
+.status.speaking i{background:var(--accent)}
+.status.answering i{background:var(--danger);animation:pulse 1.2s infinite}
+.tx{flex:1;min-height:56px;overflow:auto;background:var(--stage);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5;color:#d8dade}
+.tx:empty::before{content:attr(data-empty);color:#6f737c}
+.tx .interim{color:var(--mute)}
+.srnote{margin:0;font-size:12.5px;color:var(--warn)}
+.bar{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--stage)}
+.bar .gap{width:10px}
+button{font:inherit;font-size:14px;font-weight:500;color:var(--ink);background:var(--tile2);border:1px solid #3a3e46;border-radius:10px;min-height:44px;padding:0 16px;cursor:pointer}
+button:hover:not(:disabled){background:#343842}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:#06142b;font-weight:600}
+button.primary:hover:not(:disabled){background:#6aacff}
+button.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+button.danger:hover:not(:disabled){background:#f0595e}
+button.off{background:#4a2326;border-color:#6b2f33}
+kbd{font:inherit;font-size:12px;opacity:.75;margin-left:8px;border:1px solid currentColor;border-radius:4px;padding:0 4px}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;overflow:auto;background:rgba(9,10,12,.84);backdrop-filter:blur(8px)}
+.overlay.hidden{display:none}
+.card{width:min(1160px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,3vw,32px);box-shadow:0 30px 90px rgba(0,0,0,.55)}
+.card.small{width:min(560px,100%)}
+h1{margin:0 0 6px;font-size:clamp(26px,3.2vw,38px);line-height:1.08;letter-spacing:-.01em;text-wrap:balance}
+h2{margin:0 0 8px;font-size:19px}
+h3{margin:20px 0 8px;font-size:14px;font-weight:600;color:var(--mute)}
+h3.first{margin-top:0}
+.lead{margin:0 0 16px;color:#c9ccd2;max-width:64ch}
+.lgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:30px;align-items:start}
+.preview{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+.preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pvbar{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--mute);flex-wrap:wrap}
+.pvbar .lvl{width:90px}
+.warnbox{margin:14px 0 0;padding:12px 14px;border-radius:12px;background:#3a2a12;border:1px solid #6b4a1a;color:#ffd8a3;font-size:13.5px;line-height:1.5}
+.warnbox b{color:#ffe9cc}
+.warnbox p{margin:6px 0 0}
+.srtest{margin:8px 0 0;font-size:13px;color:#c9ccd2}
+.srtest.ok{color:#8fd0ff}.srtest.err{color:var(--warn)}
+.camstate{font-size:13px;color:var(--warn);margin:8px 0 0}
+.camstate:empty{display:none}
+ul.tips{margin:14px 0 0;padding-left:18px;color:#c9ccd2;font-size:14px}
+ul.tips li{margin:4px 0}
+.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tcard{position:relative;display:grid;align-content:start;gap:4px;padding:14px 16px;border:1px solid #3a3e46;border-radius:12px;background:var(--stage);cursor:pointer}
+.tcard input{position:absolute;opacity:0;pointer-events:none}
+.tcard b{font-size:15px}
+.tcard span{font-size:13px;color:var(--mute);line-height:1.4}
+.tcard:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tcard:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.cvstat{margin:8px 0 0;font-size:13.5px;color:#c9ccd2}
+.cvstat.err{color:var(--warn)}
+.ck{display:flex;align-items:center;gap:9px;min-height:36px;font-size:14px;cursor:pointer}
+.ck small{color:var(--mute);margin-left:auto;font-size:12px;white-space:nowrap;padding-left:6px}
+.ck input{width:18px;height:18px;accent-color:var(--accent);flex:none;margin:0}
+.est{font-size:13.5px;color:#c9ccd2;margin:0 0 8px}
+.plist{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:4px 12px;margin-top:8px;background:var(--stage)}
+.psec{padding:6px 0;border-bottom:1px solid var(--line)}
+.psec:last-child{border-bottom:0}
+.pq{display:flex;gap:9px;align-items:flex-start;padding:5px 0 5px 4px;font-size:13.5px;color:#d0d3d9;cursor:pointer}
+.pq input{width:16px;height:16px;margin:3px 0 0;accent-color:var(--accent);flex:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.field{display:grid;gap:4px;font-size:13px;color:var(--mute)}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+select,input[type=text],textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--stage);border:1px solid #3a3e46;border-radius:10px;padding:9px 11px;min-height:44px;width:100%}
+select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+textarea{resize:vertical;line-height:1.45}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:44px}
+input[type=file]{font-size:13.5px;color:var(--mute);max-width:100%}
+input[type=file]::file-selector-button{font:inherit;font-size:14px;color:var(--ink);background:var(--tile2);border:1px solid #3a3e46;border-radius:10px;min-height:44px;padding:0 16px;margin-right:12px;cursor:pointer}
+details{margin-top:12px;font-size:13.5px;color:#c9ccd2}
+summary{cursor:pointer;color:var(--ink);min-height:32px}
+details p{margin:6px 0}
+code{background:#2a2d34;border-radius:4px;padding:1px 5px;font-size:13px;overflow-wrap:anywhere}
+.privacy{font-size:12.5px;color:var(--mute);margin:12px 0 0}
+.join{margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.join .primary{min-height:52px;padding:0 26px;font-size:16px}
+.flash{color:var(--accent);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--tile);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat span{font-size:12.5px;color:var(--mute)}
+pre.txo{white-space:pre-wrap;background:var(--stage);border:1px solid var(--line);border-radius:12px;padding:14px;max-height:42vh;overflow:auto;font:13.5px/1.55 Inter,system-ui,sans-serif;color:#d8dade;margin:0}
+@media(min-width:901px){.lgrid>div:first-child{position:sticky;top:0}}
+@media(max-width:900px){.lgrid{grid-template-columns:1fr}}
+@media(max-width:820px){
+ body{overflow:auto}
+ .app{height:auto;min-height:100dvh}
+ .stage{grid-template-rows:none;grid-auto-rows:auto}
+ .tile.panel{aspect-ratio:4/3}
+ .tile.self{grid-column:1/-1;aspect-ratio:16/9}
+ .tile.qcard{grid-column:1/-1;min-height:260px}
+ .qtext{max-height:none}
+ .bar{position:sticky;bottom:0;z-index:5}
+ .top .sec{display:none}
+ .plate .role{display:none}
+}
+@media(max-width:520px){.types,.f2{grid-template-columns:1fr}.bar button{padding:0 12px}kbd{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="top">
+  <b id="topTitle">Mock interview</b><span class="sec" id="topsec">Set-up</span>
+  <span class="sp"></span>
+  <span class="num" id="topq"></span>
+  <span class="num" id="elapsed">0:00</span>
+  <span class="rec" id="recbadge" hidden><i></i>Recording</span>
+ </header>
+
+ <main class="stage">
+  <section class="tile panel" id="t-hr" aria-label="Ananya Rao">
+   <svg class="av" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+     <linearGradient id="aWall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6dac9"/><stop offset="1" stop-color="#c6b398"/></linearGradient>
+     <linearGradient id="aWin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fafc"/><stop offset="1" stop-color="#d9e3ea"/></linearGradient>
+     <radialGradient id="aSkin" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="#d9a17a"/><stop offset="1" stop-color="#b57a56"/></radialGradient>
+     <linearGradient id="aBlz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d3646"/><stop offset="1" stop-color="#5c2130"/></linearGradient>
+     <radialGradient id="aVig" cx=".5" cy=".45" r=".78"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>
+    </defs>
+    <rect width="320" height="180" fill="url(#aWall)"/>
+    <rect x="16" y="14" width="74" height="100" rx="3" fill="url(#aWin)" stroke="#b39f83" stroke-width="3"/>
+    <path d="M53 14V114M16 64H90" stroke="#b39f83" stroke-width="2"/>
+    <path d="M18 16H88V36Q58 30 18 50Z" fill="#fff" opacity=".45"/>
+    <rect x="258" y="130" width="34" height="30" rx="4" fill="#8a684c"/>
+    <g fill="#557d4e"><ellipse cx="266" cy="118" rx="7" ry="17" transform="rotate(-28 266 118)"/><ellipse cx="285" cy="115" rx="7" ry="18" transform="rotate(24 285 115)"/><ellipse cx="275" cy="108" rx="6.5" ry="19"/></g>
+    <g class="hairb"><path d="M120 62C116 26 204 26 200 62C206 86 207 110 205 130C190 137 176 132 172 126H148C144 132 130 137 115 130C113 110 114 86 120 62Z" fill="#2a1c15"/></g>
+    <g class="body">
+     <path d="M148 104H172L173 128C166 135 154 135 147 128Z" fill="#a46a49"/>
+     <path d="M64 180C66 150 92 133 130 128L147 124L160 150L173 124L190 128C228 133 254 150 256 180Z" fill="url(#aBlz)"/>
+     <path d="M144 127L160 170L176 127C170 134 150 134 144 127Z" fill="#efe5d9"/>
+     <path d="M144 127L131 134L152 178L160 170Z" fill="#6a2533"/>
+     <path d="M176 127L189 134L168 178L160 170Z" fill="#6a2533"/>
+    </g>
+    <g class="head">
+     <ellipse cx="126" cy="80" rx="5" ry="8.5" fill="#b57a56"/>
+     <ellipse cx="194" cy="80" rx="5" ry="8.5" fill="#b57a56"/>
+     <circle cx="126" cy="91" r="2.3" fill="#d9b04c"/>
+     <circle cx="194" cy="91" r="2.3" fill="#d9b04c"/>
+     <ellipse cx="160" cy="78" rx="34" ry="42" fill="url(#aSkin)"/>
+     <path d="M126 74C121 40 146 30 166 32C189 34 201 52 196 76C192 61 181 50 165 47C150 51 137 60 126 74Z" fill="#2a1c15"/>
+     <path d="M141 65Q149 60 157 64M163 64Q171 60 179 65" stroke="#2a1c15" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+     <g class="eyes">
+      <ellipse cx="149" cy="76" rx="4.3" ry="3.1" fill="#fff"/><circle cx="149.4" cy="76.3" r="2.3" fill="#2b1a12"/>
+      <ellipse cx="171" cy="76" rx="4.3" ry="3.1" fill="#fff"/><circle cx="171.4" cy="76.3" r="2.3" fill="#2b1a12"/>
+     </g>
+     <g fill="none" stroke="#3b2a22" stroke-width="1.7"><rect x="139.5" y="69.5" width="19" height="14" rx="5.5"/><rect x="161.5" y="69.5" width="19" height="14" rx="5.5"/><path d="M158.5 75.5H161.5"/></g>
+     <path d="M160 80Q157 89 159 92Q162 93.5 165 91" stroke="#97603f" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+     <ellipse cx="141" cy="92" rx="6" ry="3.5" fill="#e08a78" opacity=".25"/>
+     <ellipse cx="179" cy="92" rx="6" ry="3.5" fill="#e08a78" opacity=".25"/>
+     <path d="M150 102Q160 107.5 170 102" stroke="#8a3a3f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+     <ellipse class="open" cx="160" cy="103.5" rx="7.5" ry="4.6" fill="#55201f"/>
+    </g>
+    <rect width="320" height="180" fill="url(#aVig)"/>
+   </svg>
+   <img class="photo" alt="Photo for Ananya Rao">
+   <div class="plate"><span class="bars"><i></i><i></i><i></i></span>Ananya Rao<span class="role" id="roleHr"></span></div>
+  </section>
+
+  <section class="tile panel" id="t-od" aria-label="Arjun Desai">
+   <svg class="av" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+     <linearGradient id="dWall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6c1ca"/><stop offset="1" stop-color="#8f9daa"/></linearGradient>
+     <radialGradient id="dSkin" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="#c48e66"/><stop offset="1" stop-color="#9c6b49"/></radialGradient>
+     <linearGradient id="dBlz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d4063"/><stop offset="1" stop-color="#1a273f"/></linearGradient>
+     <radialGradient id="dVig" cx=".5" cy=".45" r=".78"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>
+    </defs>
+    <rect width="320" height="180" fill="url(#dWall)"/>
+    <rect x="22" y="24" width="60" height="44" fill="#ece7dc" stroke="#5b4737" stroke-width="3"/>
+    <path d="M28 62L42 46L52 55L60 48L76 62Z" fill="#93ab98"/>
+    <circle cx="68" cy="36" r="5" fill="#e3b45a"/>
+    <rect x="226" y="8" width="90" height="158" fill="#6a4e39"/>
+    <rect x="232" y="16" width="78" height="40" fill="#3f2e23"/>
+    <rect x="232" y="62" width="78" height="40" fill="#3f2e23"/>
+    <rect x="232" y="108" width="78" height="40" fill="#3f2e23"/>
+    <g id="books"></g>
+    <g class="body">
+     <path d="M148 106H172L173 128C166 134 154 134 147 128Z" fill="#8a5a3c"/>
+     <path d="M64 180C66 150 92 134 130 129L147 124L160 146L173 124L190 129C228 134 254 150 256 180Z" fill="url(#dBlz)"/>
+     <path d="M147 124L160 146L173 124Z" fill="#8a5a3c"/>
+     <path d="M149 130L160 146L171 130L170 180H150Z" fill="#eef0f3"/>
+     <path d="M146 123L139 134L155 151L158 143Z" fill="#fff" stroke="#cfd4db" stroke-width=".8"/>
+     <path d="M174 123L181 134L165 151L162 143Z" fill="#fff" stroke="#cfd4db" stroke-width=".8"/>
+     <path d="M145 125L131 136L150 180H155L153 150Z" fill="#17233a"/>
+     <path d="M175 125L189 136L170 180H165L167 150Z" fill="#17233a"/>
+    </g>
+    <g class="head">
+     <ellipse cx="126" cy="81" rx="5" ry="8.5" fill="#9a6a4a"/>
+     <ellipse cx="194" cy="81" rx="5" ry="8.5" fill="#9a6a4a"/>
+     <ellipse cx="160" cy="78" rx="34" ry="42" fill="url(#dSkin)"/>
+     <path d="M126 82C127 108 142 124 160 124C178 124 193 108 194 82C192 96 186 103 179 104C173 116 147 116 141 104C134 103 128 96 126 82Z" fill="#231a15"/>
+     <path d="M147 101.5C152 98.5 168 98.5 173 101.5C167 100.8 153 100.8 147 101.5Z" fill="#231a15"/>
+     <path d="M126 73C122 42 141 31 160 31C181 31 199 42 194 73C191 59 183 49 168 47C155 45 141 49 133 58C130 62 127.5 67 126 73Z" fill="#1c1613"/>
+     <path d="M126 70H130.5L131.5 86H127Z" fill="#1c1613"/>
+     <path d="M194 70H189.5L188.5 86H193Z" fill="#1c1613"/>
+     <path d="M140 65.5Q148 60.5 157 62.5M163 62.5Q172 60.5 180 65.5" stroke="#1c1613" stroke-width="3" fill="none" stroke-linecap="round"/>
+     <g class="eyes">
+      <ellipse cx="149" cy="76" rx="4.3" ry="3" fill="#fff"/><circle cx="149.4" cy="76.3" r="2.3" fill="#24160f"/>
+      <ellipse cx="171" cy="76" rx="4.3" ry="3" fill="#fff"/><circle cx="171.4" cy="76.3" r="2.3" fill="#24160f"/>
+     </g>
+     <path d="M160 79Q156 89 158 92Q162 94 166 91" stroke="#7d4f33" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+     <path d="M150.5 105.5Q160 111.5 169.5 105.5" stroke="#5a2a22" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+     <ellipse class="open" cx="160" cy="107.5" rx="7" ry="4.2" fill="#3a1a15"/>
+    </g>
+    <rect width="320" height="180" fill="url(#dVig)"/>
+   </svg>
+   <img class="photo" alt="Photo for Arjun Desai">
+   <div class="plate"><span class="bars"><i></i><i></i><i></i></span>Arjun Desai<span class="role" id="roleOd"></span></div>
+  </section>
+
+  <section class="tile self" id="t-me" aria-label="Your camera">
+   <video id="cam" class="mirror" autoplay muted playsinline></video>
+   <div class="camoff" id="camoff" hidden><span id="initials">You</span></div>
+   <div class="timer" id="atimer" hidden>0:00</div>
+   <div class="plate"><span class="lvl"><i></i></span><span id="myname">You</span><span class="mutetag" id="micoff" hidden>Muted</span></div>
+  </section>
+
+  <section class="tile qcard" id="qcard">
+   <div class="qhead"><span id="qsec">Set-up</span><span id="qnum"></span></div>
+   <div class="prog"><i id="qbar"></i></div>
+   <p class="asker" id="qwho">The panel joins when you're ready.</p>
+   <p class="qtext" id="qtext" aria-live="polite">Choose the interview, add your CV, then join.</p>
+   <p class="status" id="status"><i></i><span id="stxt">Not started</span></p>
+   <div class="tx" id="live" data-empty="Your answer appears here as you speak."></div>
+   <p class="srnote" id="srnote" hidden></p>
+  </section>
+ </main>
+
+ <nav class="bar" aria-label="Call controls">
+  <button id="bMic" aria-pressed="true">Mic on</button>
+  <button id="bCam" aria-pressed="true">Camera on</button>
+  <span class="gap"></span>
+  <button id="bRepeat" disabled>Repeat question</button>
+  <button id="bDone" class="primary" disabled>Done answering<kbd>Space</kbd></button>
+  <button id="bSkip" disabled>Skip</button>
+  <button id="bAsk" disabled>Ask a custom question</button>
+  <span class="gap"></span>
+  <button id="bEnd" class="danger" disabled>End interview</button>
+ </nav>
+</div>
+
+<div class="overlay" id="lobby">
+ <div class="card">
+  <div class="lgrid">
+   <div>
+    <h1>Interview practice room</h1>
+    <p class="lead" id="panelLead"></p>
+    <div class="preview"><video id="pv" class="mirror" autoplay muted playsinline></video></div>
+    <div class="pvbar"><span class="lvl"><i></i></span><span>Speak to test your mic</span><button id="retry" type="button" hidden>Retry camera</button><button id="testSR" type="button">Test transcript</button></div>
+    <p class="srtest" id="srTest">Press Test transcript and say a sentence to check your words appear before you start.</p>
+    <div class="warnbox" id="fileWarn" hidden>
+     <b>The live transcript can't run in this copy.</b> Chrome and Edge only allow speech-to-text on pages opened from a web address, and this page is open as a file from your computer. The camera, panel and recording still work.
+     <p>To fix it, open the room from a link. Upload this file to GitHub Pages or any web host, or run a local server: open a terminal in this file's folder, run <code>python -m http.server 8000</code>, then go to <code id="localUrl">http://localhost:8000/</code>.</p>
+    </div>
+    <p class="camstate" id="camstate"></p>
+    <div class="join"><button id="join" class="primary" type="button">Join interview</button><button id="lastCopy" type="button" hidden>Copy last transcript</button><span class="flash" id="lobbyFlash"></span></div>
+    <p class="privacy">Your CV, video and transcript stay in this browser; nothing is uploaded. Chrome and Edge send your voice to their speech service to make the live transcript, and reading a PDF loads the free pdf.js library from a public CDN.</p>
+    <ul class="tips">
+     <li>Wear headphones, so the panel's voice stays out of your recording.</li>
+     <li>Look at the camera lens when you answer, not at your own face.</li>
+     <li>Press <b>Space</b> when you finish an answer. <b>R</b> repeats the question.</li>
+    </ul>
+    <details>
+     <summary>If something doesn't work</summary>
+     <p><b>No camera picture.</b> Allow camera and microphone from the icon in the address bar. Close Teams or Zoom if they are using the camera, then press Retry camera.</p>
+     <p><b>No live transcript.</b> Use Chrome or Edge, and open the room from a web address (https or localhost), not as a file. Brave, Safari and Firefox don't support it. Press Test transcript to see the exact problem.</p>
+     <p><b>Transcript says the speech service can't be reached.</b> It needs internet, and some office or campus networks block it. Try a phone hotspot.</p>
+     <p><b>My PDF won't read.</b> Scanned PDFs have no text in them. Export your CV as a text-based PDF or Word file, or paste the text. Reading a PDF also needs an internet connection.</p>
+     <p><b>No panel voice.</b> Check your volume and choose a voice on the right. Edge has the most natural voices.</p>
+    </details>
+    <details>
+     <summary>Share this room</summary>
+     <p>Send this file to anyone; it runs entirely in their browser. To share a link instead, put the file on any static host, such as GitHub Pages. A hosted link also stops the browser asking for the microphone every time.</p>
+    </details>
+   </div>
+   <div>
+    <h3 class="first">Interview type</h3>
+    <div class="types" role="radiogroup" aria-label="Interview type">
+     <label class="tcard"><input type="radio" name="itype" value="hr" checked><b>HR role</b><span>Your CV, HR fundamentals, HR situations, behavioural and pressure questions.</span></label>
+     <label class="tcard"><input type="radio" name="itype" value="cm"><b>Change management consulting</b><span>Your CV, change concepts, a live case, consulting fit and pressure questions.</span></label>
+    </div>
+    <h3>Your CV</h3>
+    <input type="file" id="cvFile" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" aria-label="Upload your CV">
+    <p class="cvstat" id="cvStat">PDF, Word (.docx) or text. The panel builds questions from your roles, bullet points and numbers.</p>
+    <details id="pasteBox">
+     <summary>Or paste your CV text</summary>
+     <textarea id="cvPaste" rows="6" placeholder="Paste the text of your CV here"></textarea>
+     <div class="row" style="margin-top:8px"><button id="cvUse" type="button">Use this text</button><button id="cvClear" type="button">Remove CV</button></div>
+    </details>
+    <h3>Company and role (optional)</h3>
+    <div class="f2">
+     <label class="field">Company<input type="text" id="company" placeholder="Who you're interviewing with"></label>
+     <label class="field">Role<input type="text" id="role" placeholder="e.g. HR Generalist"></label>
+    </div>
+    <h3>About you</h3>
+    <div class="f2">
+     <label class="field">First name<input type="text" id="name" placeholder="So the panel can greet you" autocomplete="given-name"></label>
+     <label class="field">Transcript language<select id="lang"><option value="en-IN">English (India)</option><option value="en-GB">English (UK)</option><option value="en-US">English (US)</option></select></label>
+    </div>
+    <h3>Questions</h3>
+    <p class="est" id="est"></p>
+    <div class="row"><button id="shuffle" type="button">Draw new questions</button><button id="selAll" type="button">Tick all</button></div>
+    <details class="pv" id="pvBox"><summary>Review the questions and untick any you don't want</summary><div class="plist" id="plist"></div></details>
+    <label class="field" style="margin-top:12px">Add your own questions (optional, one per line)<textarea id="extra" rows="3" placeholder="Paste questions from Claude, a senior or a friend, one per line"></textarea></label>
+    <h3>How the panel behaves</h3>
+    <label class="ck"><input type="checkbox" id="optFollow" checked>Ask follow-up questions</label>
+    <label class="ck"><input type="checkbox" id="optSR" checked>Live transcript of my answers</label>
+    <label class="ck"><input type="checkbox" id="optRec" checked>Record my video for review</label>
+    <label class="ck"><input type="checkbox" id="optMirror" checked>Mirror my camera</label>
+    <div class="f2" style="margin-top:6px">
+     <label class="field">Cut in on long answers<select id="optCut"><option value="0">Never</option><option value="120">After 2:00</option><option value="150" selected>After 2:30</option><option value="180">After 3:00</option></select></label>
+     <label class="field">Speaking speed<input type="range" id="optRate" min="0.8" max="1.2" step="0.05" value="1"></label>
+    </div>
+    <h3>Panel voices and faces</h3>
+    <div class="f2">
+     <label class="field">Ananya's voice<select id="vHr"><option value="">Loading voices…</option></select></label>
+     <label class="field">Arjun's voice<select id="vOd"><option value="">Loading voices…</option></select></label>
+     <label class="field">Ananya's photo (optional)<input type="file" id="pHr" accept="image/*"></label>
+     <label class="field">Arjun's photo (optional)<input type="file" id="pOd" accept="image/*"></label>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="testV" type="button">Test voices</button><button id="resetP" type="button">Use illustrations</button></div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<div class="overlay hidden" id="askdlg" role="dialog" aria-modal="true" aria-labelledby="askh">
+ <div class="card small">
+  <h2 id="askh">Ask a custom question</h2>
+  <p class="lead">Paste any question you want to practise. The panel asks it next. If you're mid-answer, your answer is saved first.</p>
+  <textarea id="askq" rows="4" placeholder="Walk me through how you'd diagnose low engagement in a 500-person plant."></textarea>
+  <div class="f2" style="margin-top:10px"><label class="field">Asked by<select id="askby"><option value="hr">Ananya</option><option value="od">Arjun</option></select></label></div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end"><button id="askCancel" type="button">Cancel</button><button id="askGo" class="primary" type="button">Ask next</button></div>
+ </div>
+</div>
+
+<div class="overlay hidden" id="summary" role="dialog" aria-modal="true" aria-labelledby="sumh">
+ <div class="card">
+  <h1 id="sumh">Interview over</h1>
+  <p class="lead" id="sumlead"></p>
+  <div class="stats" id="stats"></div>
+  <p class="lead" id="sumnote"></p>
+  <div class="row"><button id="copyT" class="primary" type="button">Copy transcript for assessment</button><button id="dlT" type="button">Download transcript</button><button id="dlV" type="button" hidden>Download recording</button><button id="again" type="button">Back to set-up</button><span class="flash" id="sumFlash"></span></div>
+  <h3>Transcript</h3>
+  <pre class="txo" id="txo"></pre>
+ </div>
+</div>
+
+<script>
+{
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const draw = (a, n) => { const c = a.slice(); for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; } return c.slice(0, n); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const clip = (t, n) => { t = String(t).trim(); if (t.length <= n) return t; const c = t.slice(0, n); return c.slice(0, Math.max(c.lastIndexOf(' '), n - 20)).replace(/[,;:\s]+$/, '') + '…'; };
+const speakable = t => String(t).replace(/(\d)\s*\+/g, '$1 plus').replace(/\s&\s/g, ' and ').replace(/\s*\|\s*/g, ', ').replace(/\be\.g\.,?/gi, 'for example').replace(/\bi\.e\.,?/gi, 'that is').replace(/\bvs\.?(?=\s)/gi, 'versus').replace(/~\s*(?=\d)/g, 'about ').replace(/["“”]/g, '').replace(/…/g, '.');
+
+/* ---------- interview types and panel ---------- */
+const TYPES = {
+  hr: { label: 'HR interview', roles: { hr: 'Head of HR', od: 'HR Business Partner Lead' }, intro: { hr: "I'm Ananya, and I head HR here", od: 'Arjun, who leads our HR business partners' } },
+  cm: { label: 'Change management consulting interview', roles: { hr: 'Engagement Manager', od: 'Partner, Change & Transformation' }, intro: { hr: "I'm Ananya, an engagement manager in our change practice", od: 'Arjun, who leads our change and transformation practice' } }
+};
+const PANEL = { hr: { name: 'Ananya Rao', short: 'Ananya', tile: '#t-hr', g: 'f', pitch: 1.04 }, od: { name: 'Arjun Desai', short: 'Arjun', tile: '#t-od', g: 'm', pitch: 0.96 } };
+
+/* ---------- question banks. num: expects a figure. own: checks "I" versus "we". p: scripted follow-ups ---------- */
+const OPEN_ALL = { by: 'hr', q: "Let's start with the obvious one. Tell me about yourself.", p: ['If I remember one thing about you after today, what should it be?'] };
+const OPEN = {
+  hr: { by: 'od', q: 'Why HR, and why now?', p: ['What do you think HR teams most often get wrong?'] },
+  cm: { by: 'od', q: 'Why consulting, and why change management specifically?', p: ['What do you think a change consultant actually does day to day?'] }
+};
+const CLOSE = [{ by: 'od', q: 'Where do you see yourself in five years?', p: [] }, { by: 'hr', q: "We're nearly out of time. Do you have any questions for us?", p: [] }];
+const HR_CONCEPTS = [
+  { by: 'hr', q: 'Walk me through a performance management cycle. Where do most systems break down?', p: ['Forced ranking or continuous feedback: which would you choose for a large sales team, and why?'] },
+  { by: 'od', q: 'How would you design a hiring process for a role with high early attrition?', p: ['Which selection methods predict job performance best, and why?'] },
+  { by: 'hr', q: "What's the difference between a KRA and a KPI? Give me one of each for an HR business partner.", p: [] },
+  { by: 'od', num: 1, q: "How do you calculate attrition rate, and what's the difference between regretted and non-regretted attrition?", p: ['What would you put on a monthly people dashboard for a business head?'] },
+  { by: 'hr', q: 'How would you build a learning programme for first-time managers?', p: ["How would you know it worked? Use Kirkpatrick's four levels."] },
+  { by: 'od', q: "What's the difference between job analysis and job evaluation, and why do both matter for pay?", p: [] },
+  { by: 'hr', q: "How do India's new Labour Codes change the way salaries are structured?", p: ["What does that mean for an employee's take-home pay?"] },
+  { by: 'od', q: 'What does the POSH Act require an employer to have in place?', p: ['Walk me through what the internal committee does after a complaint.'] },
+  { by: 'hr', q: 'How should HR use AI in hiring without introducing bias?', p: ["What's one decision you would never automate?"] },
+  { by: 'od', q: 'What drives employee engagement, and how would you measure it beyond an annual survey?', p: [] },
+  { by: 'hr', q: 'What is a competency framework, and how would you build one for a new role family?', p: [] },
+  { by: 'od', q: 'How would you design a succession plan for critical roles?', p: ["What's the difference between performance and potential?"] }
+];
+const HR_SIT = [
+  { by: 'hr', q: 'Attrition among freshers in our operations team is thirty-five percent. Where do you start?', p: ['What data would you ask for first?'] },
+  { by: 'od', q: 'A star performer is rude to colleagues, and two people have quietly complained. What do you do?', p: [] },
+  { by: 'hr', q: 'A business head wants to let go of ten percent of the team within a month. How do you advise them?', p: ['What does the law require in that situation?'] },
+  { by: 'od', q: 'Engagement scores fell fifteen points in one business unit after a reorganisation. How do you investigate?', p: ["What if the data and the managers' explanation disagree?"] },
+  { by: 'hr', q: 'An employee raises a harassment complaint against their manager. What do you do in the first week?', p: [] },
+  { by: 'od', q: 'A manager wants to promote someone who scored lower in assessments than another candidate. How do you handle it?', p: [] },
+  { by: 'hr', q: 'Half the managers want everyone back in the office five days a week, and employees are pushing back. What do you recommend?', p: [] }
+];
+const HR_BEHAV = [
+  { by: 'hr', q: 'Tell me about a time you had a conflict with a peer. How did you resolve it?' },
+  { by: 'od', q: "Tell me about a failure you're not proud of. What did you learn?" },
+  { by: 'hr', q: 'Tell me about a time you had to influence someone senior without any authority.' },
+  { by: 'od', q: 'Tell me about a time you faced an ethical dilemma at work or college.' },
+  { by: 'hr', q: 'Tell me about feedback you disagreed with. What did you do with it?' },
+  { by: 'od', q: "Tell me about a time you used data to change someone's mind." }
+];
+const CM_CONCEPTS = [
+  { by: 'od', q: 'Kotter, ADKAR and Lewin: when would you use each one?', p: ["What's the biggest limitation of Kotter's model?"] },
+  { by: 'hr', q: "What's the difference between change management and project management?", p: [] },
+  { by: 'od', q: 'How do you diagnose resistance? Is resistance always a bad thing?', p: ['Give me an example of resistance that turned out to be useful feedback.'] },
+  { by: 'hr', q: 'Walk me through a stakeholder analysis for a large rollout.', p: ['A senior stakeholder with high influence is openly against the change. What do you do?'] },
+  { by: 'od', q: 'What goes into a change impact assessment?', p: [] },
+  { by: 'hr', num: 1, q: 'How would you measure whether a change has actually been adopted?', p: ['Give me two leading and two lagging indicators.'] },
+  { by: 'od', q: 'What makes a good change sponsor, and what do you do when the sponsor disengages?', p: [] },
+  { by: 'hr', q: 'How would you communicate a restructuring that involves job losses?', p: [] },
+  { by: 'od', q: 'Why do middle managers so often become the bottleneck in change, and what do you do about it?', p: [] },
+  { by: 'hr', q: 'How is driving adoption of an AI tool different from an ERP rollout?', p: [] },
+  { by: 'od', q: "How is Bridges' transition model different from the change curve, and when is each useful?", p: [] }
+];
+const CM_BEHAV = [
+  { by: 'hr', q: 'Tell me about a time you influenced someone senior without authority.' },
+  { by: 'od', q: 'Tell me about a time you had to work with incomplete or ambiguous information.' },
+  { by: 'hr', q: 'A client disagrees with your findings in a steering committee. What do you do?' },
+  { by: 'od', q: 'Tell me about a time you had to deliver bad news to someone.' },
+  { by: 'hr', q: 'Describe a project of yours that failed. What would you do differently?' },
+  { by: 'od', q: 'Tell me about a time you had to win over a sceptical group of people.' }
+];
+const PRESSURE = {
+  hr: ['Why should we hire you over someone with three years of direct HR experience?', 'Which line on your CV are you least comfortable defending, and why?', "What's your biggest weakness, and what are you actually doing about it?", 'What would your last manager say you need to improve?', 'If another company offered you more money tomorrow, what would you do?'],
+  cm: ['Why should we hire you over someone with three years of consulting experience?', 'Which line on your CV are you least comfortable defending, and why?', 'Consulting means long hours and a lot of travel. Why would you stick with it?', 'Most change programmes fail. Why would yours be any different?', "Clients often don't implement what we recommend. Doesn't that make the work pointless?"]
+};
+const CASES = [
+  { title: 'CRM adoption at a bank', prompt: 'A large private bank rolled out a new CRM to eight thousand relationship managers six months ago. Only thirty percent use it regularly, and the business head wants eighty percent by the end of the year.', reveal: 'Here is what the data shows: most relationship managers stopped logging in after the first two weeks, and their branch managers still ask for reports in Excel.' },
+  { title: 'ERP rollout in manufacturing', prompt: 'A manufacturing company is rolling out a new ERP system across twelve plants. Go-live is in five months, and plant supervisors are openly sceptical.', reveal: 'Here is what you find: supervisors expect the system to add data entry to every shift, and two earlier IT rollouts at these plants were rolled back.' },
+  { title: 'Post-merger integration', prompt: "Two mid-sized IT services firms merged six months ago. Attrition among the acquired firm's employees has doubled, and teams still work in silos.", reveal: 'Here is what the exit interviews say: people from the acquired firm feel their way of working is being erased, and many lost the managers they trusted.' },
+  { title: 'AI tool adoption in hospitals', prompt: 'A hospital chain wants doctors and nurses to use an AI tool that drafts clinical notes. The pilot went well, but adoption has stalled in seven of its ten hospitals.', reveal: 'Here is what you find: in the stalled hospitals, senior doctors never used the tool, and nurses worry about who is accountable if the AI gets something wrong.' }
+];
+const caseQs = c => [
+  { by: 'od', q: `Let me give you a case. ${c.prompt} Before you start, what would you want to clarify?`, p: [] },
+  { by: 'od', q: 'Assume the sponsor is the COO, the budget is moderate and the deadline is fixed. How would you structure the problem?', p: [] },
+  { by: 'od', q: "Give me your top three hypotheses, and the data you'd use to test each one.", p: [] },
+  { by: 'hr', q: `${c.reveal} What do you recommend, and in what order?`, p: ['Which stakeholder worries you most, and how would you handle them?'] },
+  { by: 'hr', num: 1, q: "How will you know in ninety days that it's working? Give me leading and lagging measures.", p: [] },
+  { by: 'od', q: 'You have thirty seconds with the CEO. Summarise your recommendation.', p: [] }
+];
+const INTRO = { cv: "Let's go through your CV.", fund: "Let's test a few HR fundamentals.", sit: 'Let me give you a couple of situations.', cmc: "Let's talk about change management itself.", case: "Now let's do a short case.", beh: 'A few questions about how you work.', press: "I'm going to push a little harder now.", extra: 'A few more questions.', close: "We're nearly done." };
+const ACKS = ['Okay.', 'Right.', 'Thank you.', 'Got it.', 'Alright.', 'Fair enough.', 'Understood.'];
+const NUM_PROBE = "I didn't hear a number in that. Can you put a figure on it?";
+const OWN_PROBE = "You've said 'we' quite a lot. What did you personally do?";
+const CUT_LINE = 'Let me stop you there. Give me the one-line headline.';
+const FILLERS = [['uh/um', /\b(?:uh+|um+|uhm+|erm+|hmm+)\b/gi], ['basically', /\bbasically\b/gi], ['actually', /\bactually\b/gi], ['I think', /\bi think\b/gi], ['you know', /\byou know\b/gi], ['I mean', /\bi mean\b/gi], ['kind of', /\bkind of\b/gi], ['sort of', /\bsort of\b/gi], ['so yeah', /\bso yeah\b/gi], ['literally', /\bliterally\b/gi]];
+const NUMWORD = /\d|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|lakh|crore|percent|per cent|half|double|twice)\b/i;
+
+/* ---------- CV reading ---------- */
+const BULLET_RE = /^[•●▪▫◦‣⁃∙·➢→►▸▶✓✔❖♦◆–—*-]+\s*/;
+const VERB_RE = /^(?:led|co-led|managed|designed|developed|conducted|implemented|analy[sz]ed|built|created|drove|facilitated|coordinated|organi[sz]ed|spearheaded|streamlined|reduced|increased|improved|enhanced|engineered|executed|mapped|diagnosed|proposed|represented|mediated|delivered|launched|trained|mentored|negotiated|collaborated|administered|researched|authored|published|achieved|secured|won|qualified|ranked|headed|owned|initiated|introduced|established|automated|optimi[sz]ed|redesigned|revamped|evaluated|assessed|identified|recommended|presented|prepared|planned|supported|assisted|handled|resolved|curated|crafted|formulated|benchmarked|surveyed|interviewed|onboarded|recruited|hired|screened|partnered|liaised|served|volunteered|taught|wrote|generated|saved|cut|boosted|grew|scaled|piloted|rolled|transformed|restructured|consolidated|standardi[sz]ed|digiti[sz]ed|compiled|tracked|monitored|reported|audited|validated|tested|guided|steered|championed|enabled|ensured|contributed|participated|architected|uncovered|devised|shaped|structured|synthesi[sz]ed)\b/i;
+const OWN_RE = /^(?:led|co-led|spearheaded|headed|drove|owned|managed|implemented|championed|steered|transformed|established|initiated|launched|architected)\b/i;
+const NUM_RE = /\d+(?:[.,]\d+)?\s*(?:%|\+|x\b|k\b|lakh|lac|crore|cr\b|mn\b|million|bn\b|billion|hrs?\b|hours|days|weeks|months|employees|people|participants|students|stakeholders|users|clients|records|roles|members|teams?|interviews|sessions)|\b\d{2,}\b/i;
+const EDU_RE = /\b(?:b\.?\s?tech|m\.?\s?tech|mba|pgdm|pgp|m\.a\.?|m\.?sc|b\.?sc|b\.?com|m\.?com|bba|bca|mca|bachelor|master|university|college|school|cgpa|gpa|class x|class xii|xii|hsc|ssc|cbse|icse|diploma)\b/i;
+const ROLE_RE = /\b(?:intern|internship|engineer|analyst|consultant|manager|associate|executive|specialist|lead|trainee|officer|coordinator|developer|designer|representative|volunteer|fellow|researcher|assistant|head|director|founder|co-founder|partner|advisor|recruiter|generalist|business partner|scientist|teacher|tutor|writer)\b/i;
+const CONT_RE = /(?:[,;:\-]|\b(?:and|or|of|to|the|for|with|in|by|across|on|at|from|via|into|a|an|using|including|through|between|over|under|as|within|among|while|which|that|their|its|our|my))$/i;
+const MON = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?";
+const D1 = `(?:${MON}\\s*['’]?\\s*\\d{2,4}|(?:0?[1-9]|1[0-2])\\/(?:19|20)?\\d{2}|\\b(?:19|20)\\d{2}\\b)`;
+const DATE_RE = new RegExp(`${D1}\\s*(?:[-–—~]|to|till)\\s*(?:${D1}|present|current|now|till date|date|ongoing)`, 'i');
+const DATE_G = new RegExp(DATE_RE.source, 'gi');
+const HEADS = [
+  ['exp', /^(?:work |professional |relevant |industry |corporate )?(?:experience|employment(?: history)?|work history|career history)s?$/i],
+  ['intern', /^(?:summer |winter |academic )?internships?(?: experience)?$|^(?:live |academic |key |major |selected )?projects?(?: (?:and|&) internships?)?$|^internships? (?:and|&) (?:live )?projects?$|^field ?work$/i],
+  ['edu', /^(?:education(?:al)?(?: (?:qualifications?|background|details))?|academic (?:qualifications?|background|details|profile)|qualifications?|scholastic (?:achievements|record))$/i],
+  ['por', /^(?:positions? of responsibility|leadership(?: (?:roles|experience))?|extra[- ]?curricular(?: activities)?|co[- ]?curricular(?: activities)?|volunteer(?:ing)?(?: experience)?|responsibilities|por)$/i],
+  ['ach', /^(?:achievements?|awards?(?: (?:and|&) (?:achievements|recognitions?))?|honou?rs(?: (?:and|&) awards)?|accomplishments|competitions?|recognitions?|academic achievements)$/i],
+  ['cert', /^(?:certifications?|certificates|courses(?: (?:and|&) certifications?)?|trainings?|licen[cs]es(?: (?:and|&) certifications?)?)$/i],
+  ['skills', /^(?:skills|technical skills|key skills|skills (?:and|&) tools|tools|core competencies|competencies|software|it skills)$/i],
+  ['int', /^(?:interests|hobbies|hobbies (?:and|&) interests|personal interests|interests (?:and|&) hobbies)$/i],
+  ['sum', /^(?:summary|profile|professional summary|career objective|objective|about me|profile summary)$/i]
+];
+const WORK = new Set(['exp', 'intern', 'top', 'por']);
+const TOOL_LIST = [['Excel', /\b(?:MS[- ])?Excel\b/], ['Power BI', /\bPower ?BI\b/i], ['Tableau', /\bTableau\b/i], ['SQL', /\bSQL\b/], ['Python', /\bPython\b/], ['SPSS', /\bSPSS\b/], ['SmartPLS', /\bSmart ?PLS\b/i], ['SAP', /\bSAP\b/], ['SuccessFactors', /\bSuccess ?Factors\b/i], ['Workday', /\bWorkday\b/], ['Darwinbox', /\bDarwinbox\b/i], ['Oracle HCM', /\bOracle (?:HCM|Fusion)\b/i], ['Jira', /\bJira\b/i], ['Qualtrics', /\bQualtrics\b/i], ['ChatGPT', /\bChat ?GPT\b/i], ['generative AI', /\b(?:Generative AI|Gen ?AI)\b/i]];
+const FW_LIST = [['ADKAR', /\bADKAR\b/], ["Kotter's model", /\bKotter/], ["Lewin's change model", /\bLewin/], ['the McKinsey 7S framework', /\b(?:McKinsey )?7[- ]?S\b/], ["Weisbord's Six Box model", /\bWeisbord/], ['the Burke-Litwin model', /\bBurke[- ]Litwin/], ["Kirkpatrick's model", /\bKirkpatrick/], ['the 70-20-10 model', /\b70[-:/]20[-:/]10\b/], ['Prosci', /\bProsci\b/], ['Six Sigma', /\bSix Sigma\b/i], ['design thinking', /\bdesign thinking\b/i], ['OKRs', /\bOKRs?\b/], ['the balanced scorecard', /\bbalanced scorecard\b/i], ['appreciative inquiry', /\bappreciative inquiry\b/i], ['action research', /\baction research\b/i], ['competency mapping', /\bcompetency[- ](?:mapping|frameworks?|models?)\b/i], ['job evaluation', /\bjob evaluation\b/i], ['UTAUT', /\bUTAUT\b/], ['the Technology Acceptance Model', /\bTechnology Acceptance Model\b/i], ["Schein's culture model", /\bSchein/], ['the Denison model', /\bDenison\b/], ['thematic analysis', /\bthematic analysis\b/i], ['root cause analysis', /\broot[- ]cause analysis\b/i], ['Agile', /\bAgile\b/], ['Scrum', /\bScrum\b/]];
+const isNum = b => NUM_RE.test(b.text.replace(/\b(?:19|20)\d{2}\b/g, ''));
+const cleanRole = t => t.replace(DATE_G, ' ').replace(/\(\s*\d+(?:\.\d+)?\s*(?:months?|mos?|yrs?|years?|weeks?)\s*\)/gi, ' ').replace(/\(\s*\)/g, ' ').replace(/\s*[|•·]\s*/g, ', ').replace(/\s{2,}/g, ' ').replace(/^[\s,–—\-:|]+|[\s,–—\-:|(]+$/g, '').trim();
+function headingOf(l) {
+  const t = l.replace(/\(.*?\)/g, '').replace(/[:\-–—|]+$/, '').trim();
+  if (!t || t.length > 45 || t.split(' ').length > 6) return null;
+  for (const [k, re] of HEADS) if (re.test(t)) return k;
+  return null;
+}
+function parseCV(raw) {
+  const lines = String(raw).replace(/\r/g, '').split('\n').map(l => l.replace(/[ \t   ]/g, ' ').replace(/\s+/g, ' ').trim()).filter(l => l && !/^page \d+(?: of \d+)?$/i.test(l));
+  const full = lines.join('\n');
+  const cv = { chars: full.length, name: '', roles: [], bullets: [], por: [], ach: [], interests: [], tools: [], frameworks: [] };
+  for (const l of lines.slice(0, 5)) {
+    const w = l.split(' ');
+    if (/^[A-Za-z][A-Za-z.'\- ]+$/.test(l) && w.length <= 4 && l.length <= 40 && !headingOf(l) && !ROLE_RE.test(l)) { cv.name = l.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()); break; }
+  }
+  let sec = 'top', role = null, last = null;
+  for (const l of lines) {
+    const h = headingOf(l);
+    if (h) { sec = h; role = null; last = null; continue; }
+    let text = l, bullet = false;
+    if (BULLET_RE.test(l)) { text = l.replace(BULLET_RE, '').trim(); bullet = true; }
+    if (!text) continue;
+    if (sec === 'int') { cv.interests.push(text.replace(/^interests?\s*:\s*/i, '')); continue; }
+    if (sec === 'skills' || sec === 'cert' || sec === 'edu' || sec === 'sum') { last = null; continue; }
+    const hasDate = DATE_RE.test(text), rest = hasDate ? cleanRole(text) : text;
+    if (hasDate && rest.length < 3) {
+      if (last && last.kind === 'line' && WORK.has(sec) && last.text.length <= 100 && !EDU_RE.test(last.text)) { last.kind = 'role'; last.text = cleanRole(last.text); last.bullets = []; cv.roles.push(last); role = last; }
+      continue;
+    }
+    if (!bullet && hasDate && WORK.has(sec) && rest.length <= 110 && !EDU_RE.test(rest) && !VERB_RE.test(rest)) {
+      const r = { kind: 'role', text: rest, sec, bullets: [] }; cv.roles.push(r); role = r; last = r; continue;
+    }
+    if (!bullet && last && last.kind === 'bullet' && (/^[a-z0-9(&%]/.test(text) || CONT_RE.test(last.text))) { last.text += ' ' + text; continue; }
+    if (bullet || (VERB_RE.test(text) && text.length >= 35)) {
+      const b = { kind: 'bullet', text, sec, role };
+      if (sec === 'por') cv.por.push(b); else if (sec === 'ach') cv.ach.push(b); else { cv.bullets.push(b); if (role) role.bullets.push(b); }
+      last = b; continue;
+    }
+    if (WORK.has(sec) && sec !== 'por' && text.length <= 90 && ROLE_RE.test(text) && !VERB_RE.test(text) && !EDU_RE.test(text)) {
+      const org = last && last.kind === 'line' && last.sec === sec && last.text.length <= 60 && !VERB_RE.test(last.text) && !EDU_RE.test(last.text) && !DATE_RE.test(last.text) ? last.text + ', ' : '';
+      const r = { kind: 'role', text: cleanRole(org + text), sec, bullets: [] }; cv.roles.push(r); role = r; last = r; continue;
+    }
+    if ((sec === 'ach' || sec === 'por') && text.length >= 20) { const b = { kind: 'bullet', text, sec }; (sec === 'ach' ? cv.ach : cv.por).push(b); last = b; continue; }
+    last = { kind: 'line', text, sec };
+  }
+  cv.roles = cv.roles.filter(r => r.text && r.text.length >= 3);
+  cv.tools = TOOL_LIST.filter(([, re]) => re.test(full)).map(([n]) => n);
+  cv.frameworks = FW_LIST.filter(([, re]) => re.test(full)).map(([n]) => n);
+  return cv;
+}
+const RESULT_RE = /\d+(?:\.\d+)?\s*%|\bby\s+\d|\bfrom\s+[\d,.]+\s*(?:\w+\s+)?to\s+\d|\b\d+(?:\.\d+)?\s*x\b|\b(?:reduc|increas|improv|cut|sav|boost|grew|grow|lift|rais|lower|decreas|shorten|doubl|tripl)\w*\b[^.;]*?\d/i;
+const isResult = b => RESULT_RE.test(b.text.replace(/\b(?:19|20)\d{2}\b/g, ''));
+const score = b => (isResult(b) ? 4 : isNum(b) ? 1 : 0) + (OWN_RE.test(b.text) ? 2 : 0) + (VERB_RE.test(b.text) ? 1 : 0);
+const rank = arr => arr.slice().sort((a, b) => score(b) - score(a));
+function bulletQ(b, who) {
+  const t = clip(b.text.replace(/[.;,\s]+$/, ''), 200);
+  if (isResult(b)) return { by: who, q: `Your CV says: "${t}". Walk me through it. What was the starting point, and how did you measure the result?`, p: ['What part of that was yours, and what was the team’s?'], num: 1, own: 1 };
+  if (isNum(b)) return { by: who, q: `Your CV says: "${t}". Walk me through how you did it, and what came out of it.`, p: ['What part of that was yours, and what was the team’s?'], own: 1 };
+  if (OWN_RE.test(b.text)) return { by: who, q: `Your CV says: "${t}". What exactly did you lead, and who else was involved?`, p: ['What would have happened without you?'], own: 1 };
+  return { by: who, q: `Your CV says: "${t}". How did you go about it, step by step?`, p: ['What would you do differently next time?'] };
+}
+function cvQuestions(cv, T) {
+  const out = [], used = new Set();
+  let k = 0;
+  const who = () => (k++ % 2 ? 'hr' : 'od');
+  const roleQ = r => T === 'cm' ? `Let's talk about ${r}. What change were people being asked to make there, and what was your part in it?` : `Let's talk about ${r}. What were you brought in to do, and what did you own?`;
+  for (const r of cv.roles.slice(0, 3)) {
+    out.push({ by: who(), q: roleQ(clip(r.text, 90)), p: ['If you went back, what would you do differently?'] });
+    for (const b of rank(r.bullets).slice(0, 2)) { out.push(bulletQ(b, who())); used.add(b); }
+  }
+  for (const b of rank(cv.bullets.filter(b => !used.has(b)))) { if (out.length >= 9) break; out.push(bulletQ(b, who())); used.add(b); }
+  if (cv.frameworks[0]) out.push({ by: who(), q: `You mention ${cv.frameworks[0]} on your CV. Where did you actually apply it, and where did it fall short?`, p: [] });
+  if (cv.tools[0]) out.push({ by: who(), q: `You mention ${cv.tools[0]} on your CV. Tell me about one thing you actually built or did with it.`, p: [] });
+  const lead = rank(cv.por)[0] || rank(cv.ach)[0];
+  if (lead) out.push({ by: 'hr', q: `Tell me more about this line on your CV: "${clip(lead.text.replace(/[.;,\s]+$/, ''), 180)}". What was the hardest part?`, p: ['What would the people involved say about your contribution?'] });
+  if (cv.interests.length && out.length < 13) out.push({ by: 'hr', q: `Your CV mentions ${clip(cv.interests.join(', ').replace(/[.;\s]+$/, ''), 90)}. Tell me about one of these, and what it says about you.`, p: [] });
+  return out.slice(0, 13);
+}
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => { s.remove(); rej(new Error('load failed')); }; document.head.appendChild(s); }); }
+const PDFJS = [
+  ['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'],
+  ['https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js']
+];
+let pdfReady = null;
+function getPdfJs() {
+  if (pdfReady) return pdfReady;
+  pdfReady = (async () => {
+    for (const [lib, worker] of PDFJS) {
+      try {
+        if (!window.pdfjsLib) await loadScript(lib);
+        if (!window.pdfjsLib) continue;
+        try { const code = await (await fetch(worker)).text(); window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([code], { type: 'text/javascript' })); }
+        catch (e) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = worker; }
+        return window.pdfjsLib;
+      } catch (e) { /* try the next CDN */ }
+    }
+    pdfReady = null;
+    throw new Error('Couldn’t load the PDF reader. Check your internet connection.');
+  })();
+  return pdfReady;
+}
+async function pdfText(buf) {
+  const lib = await getPdfJs();
+  const doc = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+  const out = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const tc = await (await doc.getPage(n)).getTextContent();
+    let line = '', lastY = null, lastX = null;
+    const flush = () => { if (line.trim()) out.push(line); line = ''; lastX = null; };
+    for (const it of tc.items) {
+      if (typeof it.str !== 'string') continue;
+      const x = it.transform[4], y = it.transform[5];
+      if (lastY !== null && Math.abs(y - lastY) > 2.5) flush();
+      else if (lastX !== null && x - lastX > 40) flush();
+      if (line && lastX !== null && x - lastX > 1 && !/\s$/.test(line) && !/^\s/.test(it.str)) line += ' ';
+      line += it.str;
+      lastY = y; lastX = x + (it.width || 0);
+      if (it.hasEOL) { flush(); lastY = null; }
+    }
+    flush();
+    out.push('');
+  }
+  return out.join('\n');
+}
+async function docxText(buf) {
+  if (!('DecompressionStream' in window)) throw new Error('This browser can’t open .docx files. Save your CV as a PDF, or paste the text.');
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('That file isn’t a valid .docx.');
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lho = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl));
+    if (name === 'word/document.xml') {
+      const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+      const data = u8.subarray(start, start + csize);
+      let xml;
+      if (method === 0) xml = new TextDecoder().decode(data);
+      else if (method === 8) xml = new TextDecoder().decode(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      else throw new Error('This .docx uses compression the browser can’t read. Save it as a PDF instead.');
+      const ent = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+      return xml.replace(/<w:instrText[^>]*>[\s\S]*?<\/w:instrText>/g, '').replace(/<w:delText[^>]*>[\s\S]*?<\/w:delText>/g, '').split(/<\/w:p>/).map(par => {
+        const list = /<w:numPr>/.test(par);
+        const t = par.replace(/<w:tab\/>/g, ' ').replace(/<w:br[^>]*\/>/g, '\n').replace(/<[^>]+>/g, '').replace(/&(#x?[0-9a-f]+|amp|lt|gt|quot|apos);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : ent[e.toLowerCase()]).trim();
+        return t ? (list ? '- ' : '') + t : '';
+      }).join('\n');
+    }
+    p += 46 + nl + el + cl;
+  }
+  throw new Error('No text found in that .docx.');
+}
+
+/* ---------- state ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const HAS_TTS = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+const IS_FILE = location.protocol === 'file:';
+function srError(code) {
+  if (code === 'not-allowed' || code === 'service-not-allowed') return IS_FILE ? 'Speech-to-text is blocked because this page is open as a file. Open it from a web address; the set-up screen shows how.' : 'Speech-to-text is blocked. Click the icon in the address bar, allow the microphone, then reload.';
+  if (code === 'network') return 'Speech-to-text couldn’t reach the browser’s speech service. Check your internet; some campus and office networks block it. Brave doesn’t support it.';
+  if (code === 'audio-capture') return 'Speech-to-text found no microphone. Check that no other app is holding it.';
+  if (code === 'language-not-supported') return 'This browser can’t transcribe the chosen language. Pick English (US) in set-up.';
+  return `Speech-to-text stopped with an error (${code}).`;
+}
+let liveUtter = null, testRec = null;
+const S = { type: 'hr', company: '', roleName: '', sections: [], draws: null, off: new Set(), phase: 'lobby', started: false, ended: false, entries: [], plan: [], mi: -1, customQ: [], cur: null, lastAnswered: null, lastAsker: null, name: '', followups: true, srOn: true, cutAt: 150, lang: 'en-IN', rate: 1, voice: { hr: null, od: null }, micOn: true, camOn: true, finalText: '', interim: '', srBlocked: false, srWorked: false, t0: 0, t1: 0, startedAt: 0, ansStart: 0, customMode: false };
+let CV = null, run = 0, stream = null, voices = [];
+let rec = null, recWant = false, recActive = false, stopWaiter = null;
+let mr = null, chunks = [], recBlob = null, recT0 = 0;
+let actx = null, an = null, buf = null, meterOn = false, endArm = 0, extraTimer = 0;
+const lvls = $$('.lvl i');
+const stamp = () => { const d = new Date(S.startedAt || Date.now()), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
+const offset = () => performance.now() - (recT0 || S.t0);
+const joinText = () => (S.finalText + (S.interim ? ' ' + S.interim : '')).trim();
+const mk = (kind, by, q, m) => ({ kind, by, q, main: m || null, section: m ? m.section : 'Custom questions', sid: m ? m.sid : 'custom', askedAt: 0, answer: null, n: 0 });
+
+/* ---------- set-up: type, sections, preview ---------- */
+function redraw() {
+  S.draws = S.type === 'hr'
+    ? { a: draw(HR_CONCEPTS, 4), b: draw(HR_SIT, 2), beh: draw(HR_BEHAV, 3), press: draw(PRESSURE.hr, 2) }
+    : { a: draw(CM_CONCEPTS, 4), c: pick(CASES), beh: draw(CM_BEHAV, 3), press: draw(PRESSURE.cm, 2) };
+}
+function buildSections() {
+  const T = S.type, d = S.draws, co = $('#company').value.trim(), ro = $('#role').value.trim(), secs = [];
+  const open = [OPEN_ALL, OPEN[T]];
+  if (co || ro) open.push({ by: 'hr', q: co ? `Why ${co}${ro ? `, and why the ${ro} role` : ''}?` : `Why the ${ro} role?`, p: ["What do you know about the challenges we're facing right now?"] });
+  secs.push({ id: 'open', title: 'Opening', qs: open });
+  if (CV) { const cq = cvQuestions(CV, T); if (cq.length) secs.push({ id: 'cv', title: 'From your CV', qs: cq }); }
+  if (T === 'hr') { secs.push({ id: 'fund', title: 'HR fundamentals', qs: d.a }); secs.push({ id: 'sit', title: 'HR situations', qs: d.b }); }
+  else { secs.push({ id: 'cmc', title: 'Change management concepts', qs: d.a }); secs.push({ id: 'case', title: 'Case: ' + d.c.title, qs: caseQs(d.c) }); }
+  secs.push({ id: 'beh', title: 'Behavioural', qs: d.beh.map(q => Object.assign({ own: 1, p: ['What was the result, and how do you know?'] }, q)) });
+  secs.push({ id: 'press', title: 'Pressure round', qs: d.press.map((q, i) => ({ by: i % 2 ? 'od' : 'hr', q, p: [] })) });
+  const ex = $('#extra').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 30);
+  if (ex.length) secs.push({ id: 'extra', title: 'Your questions', qs: ex.map((q, i) => ({ by: i % 2 ? 'od' : 'hr', q, p: [] })) });
+  secs.push({ id: 'close', title: 'Closing', qs: CLOSE });
+  for (const s of secs) { s.qs = s.qs.map(q => Object.assign({}, q, { p: q.p || [], on: !S.off.has(q.q) })); s.on = s.qs.some(q => q.on); }
+  S.sections = secs;
+  renderPreview();
+}
+function renderPreview() {
+  $('#plist').innerHTML = S.sections.map((s, si) => {
+    const on = s.qs.filter(q => q.on).length;
+    return `<div class="psec"><label class="ck"><input type="checkbox" data-s="${si}"${on ? ' checked' : ''}><b>${esc(s.title)}</b><small>${on} of ${s.qs.length}</small></label>` +
+      s.qs.map((q, qi) => `<label class="pq"><input type="checkbox" data-s="${si}" data-q="${qi}"${q.on ? ' checked' : ''}><span>${esc(q.q)}</span></label>`).join('') + '</div>';
+  }).join('');
+  updateEst();
+}
+function updateEst() {
+  const fo = $('#optFollow').checked;
+  let m = 0, p = 0;
+  for (const s of S.sections) for (const q of s.qs) if (q.on) { m++; p += q.p.length; }
+  const mins = Math.round(m * 1.8 + (fo ? p * 1.1 : 0)), len = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+  const cvq = (S.sections.find(s => s.id === 'cv') || { qs: [] }).qs.filter(q => q.on).length;
+  $('#est').textContent = m ? `${m} questions${fo && p ? ` and up to ${p} follow-ups` : ''}, about ${len}${cvq ? `, including ${cvq} from your CV` : CV ? '' : '. Add a CV for questions about your own experience'}. You can end at any point and still get the transcript.` : 'Nothing ticked: the panel waits for your custom questions.';
+  $('#join').textContent = m ? 'Join interview' : 'Join with custom questions only';
+}
+function setType(t) {
+  S.type = t === 'cm' ? 'cm' : 'hr';
+  const T = TYPES[S.type];
+  $('#roleHr').textContent = T.roles.hr; $('#roleOd').textContent = T.roles.od;
+  $('#t-hr').setAttribute('aria-label', `Ananya Rao, ${T.roles.hr}`); $('#t-od').setAttribute('aria-label', `Arjun Desai, ${T.roles.od}`);
+  $('#topTitle').textContent = S.type === 'hr' ? 'HR interview' : 'Change management interview';
+  $('#askby').options[0].textContent = `Ananya, ${T.roles.hr}`; $('#askby').options[1].textContent = `Arjun, ${T.roles.od}`;
+  $('#panelLead').innerHTML = `Practise a video interview with a two-person panel: <b>Ananya Rao</b>, ${esc(T.roles.hr)}, and <b>Arjun Desai</b>, ${esc(T.roles.od)}. They ask out loud, follow up on what you say and take turns. You answer on camera.`;
+  redraw(); buildSections();
+}
+function setCvStat(t, err) { const n = $('#cvStat'); n.textContent = t; n.classList.toggle('err', !!err); }
+function useCV(text, label) {
+  const cv = parseCV(text || '');
+  if (cv.chars < 80) { CV = null; buildSections(); setCvStat(`Couldn’t find text in ${label}. If it’s a scanned PDF, paste the text instead.`, true); $('#pasteBox').open = true; return; }
+  CV = cv;
+  if (!$('#name').value.trim() && cv.name) $('#name').value = cv.name.split(' ')[0];
+  buildSections();
+  const nb = cv.bullets.length + cv.por.length + cv.ach.length, nn = cv.bullets.filter(isNum).length, tf = cv.tools.length + cv.frameworks.length;
+  const cvq = (S.sections.find(s => s.id === 'cv') || { qs: [] }).qs.length;
+  if (!cv.roles.length && !nb) setCvStat(`Read ${label}, but couldn’t find roles or bullet points in it. An unusual layout can do this; pasting the text usually works better.`, true);
+  else setCvStat(`Read ${label}: ${cv.roles.length} role${cv.roles.length === 1 ? '' : 's'}, ${nb} bullet point${nb === 1 ? '' : 's'} (${nn} with numbers)${tf ? `, ${tf} tool${tf === 1 ? '' : 's'} or framework${tf === 1 ? '' : 's'}` : ''}. ${cvq} question${cvq === 1 ? '' : 's'} come from your CV.`);
+}
+function saveSettings() { try { localStorage.setItem('ipr:settings', JSON.stringify({ type: S.type, company: $('#company').value, role: $('#role').value, name: $('#name').value, lang: $('#lang').value })); } catch (e) {} }
+function loadSettings() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem('ipr:settings') || 'null'); } catch (e) {}
+  if (!s) return 'hr';
+  if (typeof s.company === 'string') $('#company').value = s.company;
+  if (typeof s.role === 'string') $('#role').value = s.role;
+  if (typeof s.name === 'string') $('#name').value = s.name;
+  if (['en-IN', 'en-GB', 'en-US'].includes(s.lang)) $('#lang').value = s.lang;
+  const t = s.type === 'cm' ? 'cm' : 'hr';
+  const r = $(`input[name=itype][value="${t}"]`); if (r) r.checked = true;
+  return t;
+}
+
+/* ---------- voices ---------- */
+const voiceBy = uri => voices.find(v => v.voiceURI === uri) || null;
+function pickVoice(g, avoid) {
+  const fem = /female|heera|neerja|veena|kalpana|swara|aditi|raveena|zira|samantha|serena|sonia|libby|kate|susan|hazel|karen|moira|tessa|fiona|victoria|ava|jenny|aria|emma|natasha|clara/i;
+  const mal = /\bmale\b|ravi|prabhat|rishi|hemant|madhur|kunal|david|mark|george|daniel|ryan|guy|thomas|oliver|alex\b|fred|arthur|aaron|william|liam/i;
+  const re = g === 'f' ? fem : mal;
+  const inLang = l => voices.filter(v => v !== avoid && v.lang.replace('_', '-').toLowerCase().startsWith(l));
+  for (const pool of [inLang('en-in'), inLang('en-gb'), inLang('en-us'), voices.filter(v => v !== avoid)]) {
+    const hit = pool.find(v => re.test(v.name) && /natural|online|neural/i.test(v.name)) || pool.find(v => re.test(v.name));
+    if (hit) return hit;
+  }
+  return voices.find(v => v !== avoid) || voices[0] || null;
+}
+function fillVoices() {
+  if (!HAS_TTS) { $('#vHr').innerHTML = $('#vOd').innerHTML = '<option value="">No voices in this browser</option>'; return; }
+  voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  if (!voices.length) return;
+  const hrPrev = $('#vHr').value, odPrev = $('#vOd').value;
+  const opts = voices.map(v => `<option value="${esc(v.voiceURI)}">${esc(v.name)}</option>`).join('');
+  $('#vHr').innerHTML = opts; $('#vOd').innerHTML = opts;
+  const hr = voiceBy(hrPrev) || pickVoice('f', null), od = voiceBy(odPrev) || pickVoice('m', hr);
+  if (hr) $('#vHr').value = hr.voiceURI;
+  if (od) $('#vOd').value = od.voiceURI;
+}
+
+/* ---------- panel speech ---------- */
+function speak(who, text) {
+  return new Promise(resolve => {
+    const tok = run, tile = $(PANEL[who].tile);
+    let done = false, guard = 0;
+    const finish = () => { if (done) return; done = true; clearTimeout(guard); tile.classList.remove('speaking'); resolve(); };
+    tile.classList.add('speaking');
+    const said = speakable(text);
+    if (!HAS_TTS) { guard = setTimeout(finish, 1200 + said.length * 55); return; }
+    guard = setTimeout(finish, 5000 + said.length * 95);
+    const parts = said.split(/(?<=[.!?])\s+/).filter(Boolean);
+    let i = 0;
+    const step = () => {
+      if (done) return;
+      if (tok !== run || i >= parts.length) return finish();
+      const u = new SpeechSynthesisUtterance(parts[i++]);
+      const v = S.voice[who];
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-IN';
+      u.rate = S.rate; u.pitch = PANEL[who].pitch;
+      u.onend = step; u.onerror = finish;
+      liveUtter = u; /* a live reference stops Chrome from garbage-collecting the utterance and never firing onend */
+      try { if (speechSynthesis.paused) speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { finish(); }
+    };
+    step();
+  });
+}
+function hush() { try { if (HAS_TTS) speechSynthesis.cancel(); } catch (e) {} for (const w of ['hr', 'od']) $(PANEL[w].tile).classList.remove('speaking'); }
+
+/* ---------- live transcript ---------- */
+function srNote(t) { const n = $('#srnote'); n.textContent = t || ''; n.hidden = !t; }
+function renderLive() {
+  const live = $('#live');
+  if (!S.finalText && !S.interim) { live.replaceChildren(); return; }
+  const f = document.createElement('span'); f.textContent = S.finalText;
+  const i = document.createElement('span'); i.className = 'interim'; i.textContent = (S.finalText && S.interim ? ' ' : '') + S.interim;
+  live.replaceChildren(f, i);
+  live.scrollTop = live.scrollHeight;
+}
+function startListening(reset) {
+  if (reset) { S.finalText = ''; S.interim = ''; }
+  renderLive();
+  recWant = true;
+  if (!S.srOn || !SR || S.srBlocked || !S.micOn || recActive) return;
+  try {
+    const r = new SR();
+    r.lang = S.lang; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    r.onstart = () => { recActive = true; };
+    r.onresult = ev => {
+      let interim = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const res = ev.results[i], t = (res[0] && res[0].transcript || '').trim();
+        if (!t) continue;
+        if (res.isFinal) S.finalText += (S.finalText ? ' ' : '') + t;
+        else interim += (interim ? ' ' : '') + t;
+      }
+      if (!S.srWorked) srNote('');
+      S.interim = interim; S.srWorked = true; renderLive();
+    };
+    r.onerror = ev => {
+      if (ev.error === 'no-speech' || ev.error === 'aborted') return;
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') S.srBlocked = true;
+      srNote(srError(ev.error) + ' Your recording still has your answers.');
+    };
+    r.onend = () => {
+      recActive = false;
+      if (S.interim) { S.finalText += (S.finalText ? ' ' : '') + S.interim; S.interim = ''; renderLive(); }
+      if (recWant && rec === r && !S.srBlocked && S.micOn && S.srOn) {
+        setTimeout(() => { if (recWant && rec === r && !recActive) { try { r.start(); } catch (e) {} } }, 150);
+      } else {
+        if (rec === r) rec = null;
+        if (stopWaiter) { const w = stopWaiter; stopWaiter = null; w(); }
+      }
+    };
+    rec = r;
+    r.start();
+  } catch (e) { srNote('The live transcript could not start in this browser. Use Chrome or Edge.'); }
+}
+function stopListening() {
+  recWant = false;
+  return new Promise(res => {
+    if (!rec || !recActive) { rec = null; res(); return; }
+    stopWaiter = res;
+    try { rec.stop(); } catch (e) {}
+    setTimeout(() => { if (stopWaiter === res) { stopWaiter = null; try { if (rec) rec.abort(); } catch (e) {} rec = null; recActive = false; res(); } }, 1600);
+  });
+}
+
+/* ---------- camera, mic meter, recording ---------- */
+async function initMedia() {
+  const st = $('#camstate');
+  st.textContent = 'Waiting for camera and microphone permission…'; $('#retry').hidden = true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { st.textContent = 'This browser can’t open the camera from here. Open the file in Chrome or Edge on a laptop.'; return; }
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, audio: { echoCancellation: true, noiseSuppression: true } });
+    st.textContent = '';
+  } catch (err) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      st.textContent = 'Camera unavailable, so you’ll join with your microphone only. Close other apps using the camera, then press Retry camera.';
+    } catch (e2) {
+      stream = null;
+      st.textContent = err && err.name === 'NotAllowedError' ? 'Camera and microphone are blocked. Allow them from the icon in the address bar, then press Retry camera.' : 'No camera or microphone found. Check they are connected and not in use, then press Retry camera.';
+    }
+    $('#retry').hidden = false;
+  }
+  $('#cam').srcObject = stream; $('#pv').srcObject = stream;
+  $('#camoff').hidden = !!(stream && stream.getVideoTracks().length);
+  setupMeter();
+}
+function setupMeter() {
+  try {
+    if (!stream || !stream.getAudioTracks().length) return;
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const src = actx.createMediaStreamSource(stream);
+    an = actx.createAnalyser(); an.fftSize = 512; buf = new Uint8Array(an.fftSize);
+    src.connect(an);
+    if (!meterOn) { meterOn = true; requestAnimationFrame(meter); }
+  } catch (e) {}
+}
+function meter() {
+  let pct = 0;
+  if (an && S.micOn) {
+    an.getByteTimeDomainData(buf);
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; }
+    pct = Math.min(100, Math.round(Math.sqrt(s / buf.length) * 420));
+  }
+  for (const el of lvls) el.style.width = pct + '%';
+  requestAnimationFrame(meter);
+}
+function startRecording() {
+  recBlob = null; $('#dlV').hidden = true;
+  if (!stream || !window.MediaRecorder) return;
+  const type = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } });
+  let m;
+  try { m = new MediaRecorder(stream, Object.assign({ videoBitsPerSecond: 900000, audioBitsPerSecond: 64000 }, type ? { mimeType: type } : {})); } catch (e) { mr = null; return; }
+  chunks = [];
+  m.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  m.onstop = () => { recBlob = new Blob(chunks, { type: m.mimeType || 'video/webm' }); chunks = []; $('#dlV').hidden = !recBlob.size; };
+  m.start(2000); mr = m; recT0 = performance.now(); $('#recbadge').hidden = false;
+}
+function stopRecording() { $('#recbadge').hidden = true; if (mr && mr.state !== 'inactive') { try { mr.stop(); } catch (e) {} } }
+
+/* ---------- interview flow ---------- */
+function setStatus(kind, text) { $('#status').className = 'status ' + (kind || ''); $('#stxt').textContent = text; }
+function setListening(on) { for (const w of ['hr', 'od']) $(PANEL[w].tile).classList.toggle('listening', on); }
+function updateButtons() {
+  const p = S.phase, live = S.started && !S.ended, q = p === 'asking' || p === 'answering';
+  $('#bDone').disabled = p !== 'answering';
+  $('#bRepeat').disabled = !q;
+  $('#bSkip').disabled = !q;
+  $('#bAsk').disabled = !live;
+  $('#bEnd').disabled = !live;
+}
+function showQuestion(e) {
+  $('#qsec').textContent = e.section; $('#topsec').textContent = e.section;
+  const N = S.plan.length;
+  if (e.kind === 'main') { $('#qnum').textContent = `Question ${e.n} of ${N}`; $('#qbar').style.width = (100 * e.n / N) + '%'; $('#topq').textContent = `Q ${e.n}/${N}`; }
+  else $('#qnum').textContent = e.kind === 'probe' ? 'Follow-up' : e.kind === 'interrupt' ? 'Cutting in' : 'Custom question';
+  $('#qwho').textContent = `${PANEL[e.by].name} asks`;
+  $('#qtext').textContent = e.q;
+  S.finalText = ''; S.interim = ''; renderLive();
+}
+async function greet() {
+  const my = ++run, T = TYPES[S.type];
+  S.phase = 'transition'; updateButtons();
+  const h = new Date().getHours(), pod = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening', nm = S.name ? `, ${S.name}` : '';
+  const co = S.company ? ` Thank you for your interest in ${S.company}${S.roleName ? ` and the ${S.roleName} role` : ''}.` : S.roleName ? ` Thank you for your interest in the ${S.roleName} role.` : '';
+  $('#qsec').textContent = 'Introductions'; $('#qnum').textContent = '';
+  $('#qwho').textContent = 'Ananya Rao'; $('#qtext').textContent = `Good ${pod}${nm}. Welcome.`;
+  setStatus('speaking', 'The panel is introducing themselves');
+  await speak('hr', `Good ${pod}${nm}. ${T.intro.hr}. With me is ${T.intro.od}.${co}`);
+  if (my !== run) return;
+  $('#qwho').textContent = 'Arjun Desai';
+  await speak('od', `Hello${S.name ? ' ' + S.name : ''}, good to meet you. Make yourself comfortable.`);
+  if (my !== run) return;
+  await sleep(350);
+  if (my !== run) return;
+  S.lastAsker = 'od';
+  next();
+}
+function next() {
+  if (S.ended) return;
+  if (S.customQ.length) return askEntry(S.customQ.shift());
+  const m = S.plan[S.mi];
+  if (m && S.followups && !m.skipRest) { const p = nextProbe(m); if (p) return askEntry(p); }
+  if (S.mi + 1 < S.plan.length) { S.mi++; return askMain(S.mi); }
+  if (S.customMode) {
+    S.phase = 'idle'; S.cur = null; updateButtons();
+    $('#qwho').textContent = 'The panel is ready.'; $('#qtext').textContent = 'Paste your next question with “Ask a custom question”.';
+    setStatus('', 'Waiting for your custom question');
+    return;
+  }
+  return closeInterview();
+}
+function nextProbe(m) {
+  const last = S.lastAnswered;
+  if (!m.heur && last && last.main === m && last.answer && S.srWorked) {
+    const t = last.answer.text || '', words = t.split(/\s+/).filter(Boolean).length;
+    if (m.num && words > 15 && !NUMWORD.test(t)) { m.heur = true; return mk('probe', m.by, NUM_PROBE, m); }
+    if (m.own) {
+      const we = (t.match(/\b(?:we|our|us)\b/gi) || []).length, me = (t.match(/\b(?:i|my|me|myself)\b/gi) || []).length;
+      if (we >= 4 && we > me) { m.heur = true; return mk('probe', m.by, OWN_PROBE, m); }
+    }
+  }
+  if (m.pi < m.p.length) return mk('probe', m.by, m.p[m.pi++], m);
+  return null;
+}
+async function askMain(i) {
+  const my = ++run, m = S.plan[i], prev = i > 0 ? S.plan[i - 1] : null;
+  S.phase = 'transition'; updateButtons();
+  if (prev) {
+    const newSec = m.sid !== prev.sid, who = S.lastAsker || prev.by;
+    setStatus('speaking', 'The panel is speaking');
+    if (newSec && who !== m.by) await speak(who, `Thank you. ${PANEL[m.by].short}, over to you.`);
+    else if (newSec || Math.random() < 0.5) await speak(who, pick(ACKS));
+    if (my !== run) return;
+    if (newSec && INTRO[m.sid]) { await speak(m.by, INTRO[m.sid]); if (my !== run) return; }
+    await sleep(200);
+    if (my !== run) return;
+  }
+  const e = mk('main', m.by, m.q, m); e.n = i + 1;
+  return askEntry(e, my);
+}
+async function askEntry(e, my) {
+  if (my === undefined) my = ++run;
+  S.cur = e; S.phase = 'asking'; S.lastAsker = e.by;
+  e.askedAt = offset();
+  S.entries.push(e);
+  showQuestion(e);
+  setStatus('speaking', `${PANEL[e.by].short} is asking`);
+  updateButtons();
+  await speak(e.by, e.q);
+  if (my !== run) return;
+  startAnswer(e, false);
+}
+function startAnswer(e, keep) {
+  S.phase = 'answering';
+  if (!keep) { e.answer = { text: '', ms: 0 }; S.ansStart = performance.now(); }
+  setListening(true);
+  const tx = S.srOn && SR && !S.srBlocked;
+  setStatus('answering', tx ? 'Your answer. Press Space when you’re done.' : 'Your answer (not transcribed). Press Space when you’re done.');
+  $('#atimer').hidden = false;
+  startListening(!keep);
+  updateButtons();
+}
+async function finishAnswer(mode) {
+  if (S.phase !== 'answering') return;
+  const e = S.cur, my = ++run;
+  S.phase = 'thinking'; updateButtons();
+  e.answer.ms = performance.now() - S.ansStart;
+  $('#atimer').hidden = true;
+  setListening(false);
+  setStatus('', mode === 'cut' ? `${PANEL[e.by].short} is cutting in` : 'The panel is making notes');
+  await stopListening();
+  e.answer.text = joinText();
+  analyse(e.answer);
+  if (mode === 'cut') e.answer.cut = true;
+  S.lastAnswered = e;
+  save();
+  if (my !== run) return;
+  if (mode === 'cut') S.customQ.unshift(mk('interrupt', e.by, CUT_LINE, e.main));
+  else { await sleep(500 + Math.random() * 700); if (my !== run) return; }
+  next();
+}
+async function skip() {
+  if (!(S.phase === 'asking' || S.phase === 'answering')) return;
+  const e = S.cur, was = S.phase, my = ++run;
+  hush(); setListening(false);
+  S.phase = 'thinking'; updateButtons();
+  $('#atimer').hidden = true;
+  if (was === 'answering') { e.answer.ms = performance.now() - S.ansStart; await stopListening(); e.answer.text = joinText(); analyse(e.answer); }
+  else e.answer = { text: '', ms: 0, words: 0, fillers: {}, fillerTotal: 0 };
+  e.answer.skipped = true;
+  if (e.kind !== 'custom' && e.main) e.main.skipRest = true;
+  S.customQ = S.customQ.filter(x => x.kind !== 'interrupt');
+  save();
+  if (my !== run) return;
+  next();
+}
+async function repeat() {
+  if (!(S.phase === 'asking' || S.phase === 'answering')) return;
+  const e = S.cur, was = S.phase, my = ++run;
+  hush();
+  if (was === 'answering') { setListening(false); await stopListening(); if (my !== run) return; }
+  S.phase = 'asking'; updateButtons();
+  setStatus('speaking', `${PANEL[e.by].short} is repeating the question`);
+  await sleep(150);
+  if (my !== run) return;
+  await speak(e.by, e.q);
+  if (my !== run) return;
+  startAnswer(e, was === 'answering');
+}
+async function closeInterview() {
+  const my = ++run;
+  S.phase = 'transition'; updateButtons();
+  $('#qsec').textContent = 'Closing'; $('#qnum').textContent = ''; $('#qwho').textContent = 'Ananya Rao'; $('#qtext').textContent = 'Thank you. It was good talking to you.';
+  setStatus('speaking', 'The panel is wrapping up');
+  await speak('hr', `Thank you${S.name ? ', ' + S.name : ''}. It was good talking to you. We'll be in touch about next steps.`);
+  if (my !== run) return;
+  endInterview();
+}
+async function endInterview() {
+  if (S.ended || !S.started) return;
+  S.ended = true; run++;
+  hush(); setListening(false);
+  $('#atimer').hidden = true;
+  const e = S.cur;
+  if (S.phase === 'answering' && e) { e.answer.ms = performance.now() - S.ansStart; await stopListening(); e.answer.text = joinText(); analyse(e.answer); e.answer.early = true; }
+  else await stopListening();
+  S.phase = 'ended'; S.t1 = performance.now();
+  updateButtons(); stopRecording(); save();
+  setStatus('', 'Interview ended');
+  showSummary();
+}
+
+/* ---------- analysis, transcript, summary ---------- */
+function analyse(a) {
+  const t = a.text || '';
+  a.words = t ? t.split(/\s+/).filter(Boolean).length : 0;
+  a.fillers = {}; a.fillerTotal = 0;
+  for (const [k, re] of FILLERS) { const n = (t.match(re) || []).length; if (n) { a.fillers[k] = n; a.fillerTotal += n; } }
+}
+function stats() {
+  const ans = S.entries.filter(e => e.answer && !e.answer.skipped && e.answer.ms > 0);
+  const ms = ans.reduce((s, e) => s + e.answer.ms, 0), words = ans.reduce((s, e) => s + (e.answer.words || 0), 0);
+  const f = {}; let ft = 0;
+  for (const e of ans) for (const [k, n] of Object.entries(e.answer.fillers || {})) { f[k] = (f[k] || 0) + n; ft += n; }
+  const mins = ms / 60000;
+  return {
+    n: ans.length, avg: ans.length ? ms / ans.length : 0, long: ans.filter(e => e.answer.ms > 150000).length,
+    skipped: S.entries.filter(e => e.answer && e.answer.skipped).length, words,
+    wpm: mins > 0.2 ? Math.round(words / mins) : 0, ft, fpm: mins > 0.2 ? (ft / mins).toFixed(1) : '0',
+    top: Object.entries(f).sort((a, b) => b[1] - a[1]).slice(0, 3),
+    longest: ans.slice().sort((a, b) => b.answer.ms - a.answer.ms).slice(0, 3)
+  };
+}
+const label = e => e.kind === 'main' ? `Q${e.n}` : e.kind === 'probe' ? 'Follow-up' : e.kind === 'interrupt' ? 'Cut-in' : 'Custom';
+function transcript() {
+  const T = TYPES[S.type], end = S.t1 || performance.now(), L = [];
+  const target = [S.company, S.roleName].filter(Boolean).join(', ');
+  L.push(`MOCK INTERVIEW TRANSCRIPT: ${T.label}${target ? ` (${target})` : ''}`);
+  L.push(`Candidate: ${S.name || 'not given'}  |  ${new Date(S.startedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}  |  Length ${fmt(end - S.t0)}`);
+  L.push(`Panel: Ananya Rao (${T.roles.hr}), Arjun Desai (${T.roles.od})`);
+  L.push('Auto-transcribed: speech recognition can mishear words and usually drops "uh" and "um". Times in [ ] are from the start and match the video recording.');
+  L.push('');
+  let sec = '';
+  for (const e of S.entries) {
+    if (e.section !== sec) { sec = e.section; L.push(`--- ${sec} ---`); }
+    L.push(`${label(e)} [${fmt(e.askedAt)}] ${PANEL[e.by].short}: ${e.q}`);
+    const a = e.answer;
+    if (!a) { L.push('Answer: (not reached)'); L.push(''); continue; }
+    const meta = [];
+    if (a.ms) meta.push(fmt(a.ms));
+    if (a.words) meta.push(a.words + ' words');
+    if (a.fillerTotal) meta.push('fillers: ' + Object.entries(a.fillers).map(([k, n]) => `${k} x${n}`).join(', '));
+    if (a.cut) meta.push('panel cut in');
+    if (a.skipped) meta.push('skipped');
+    if (a.early) meta.push('interview ended here');
+    L.push(`Answer${meta.length ? ' (' + meta.join('; ') + ')' : ''}: ${a.text || (a.skipped ? '(skipped)' : '(no transcript captured)')}`);
+    L.push('');
+  }
+  const st = stats();
+  L.push('--- Summary ---');
+  L.push(`Answers: ${st.n}  |  Average answer: ${fmt(st.avg)}  |  Over 2:30: ${st.long}  |  Skipped: ${st.skipped}`);
+  if (st.words) L.push(`Pace: ${st.wpm} words per minute  |  Filler phrases: ${st.ft} (${st.fpm} per minute)${st.top.length ? '  |  Most used: ' + st.top.map(([k, n]) => `${k} x${n}`).join(', ') : ''}`);
+  return L.join('\n');
+}
+function assessPrompt() {
+  const T = TYPES[S.type], target = [S.company, S.roleName].filter(Boolean).join(', ');
+  return `Here is the transcript of my mock ${T.label.toLowerCase()}${target ? ` (${target})` : ''}. Assess it like a demanding but fair interview panel. Score each answer from 1 to 5 for structure, evidence, ownership and impact. List red flags and any CV claims I struggled to defend, note filler words and pacing, then give me a focused preparation plan. Be honest rather than generous.\n\n`;
+}
+function save() { try { localStorage.setItem('ipr:last', transcript()); } catch (e) {} }
+function showSummary() {
+  const st = stats(), len = fmt(S.t1 - S.t0);
+  $('#sumlead').textContent = st.n ? `You answered ${st.n} question${st.n === 1 ? '' : 's'} in ${len}. Copy the transcript into Claude or another AI assistant for a full assessment; the copy includes a prompt asking for one.` : 'No answers were recorded. Go back to set-up to start again.';
+  const tiles = [[len, 'Interview length'], [String(st.n), 'Answers'], [fmt(st.avg), 'Average answer'], [String(st.long), 'Answers over 2:30']];
+  if (st.words) tiles.push([String(st.wpm), 'Words per minute'], [st.fpm, 'Filler phrases per minute']);
+  $('#stats').innerHTML = tiles.map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+  const notes = [];
+  if (st.longest.length) notes.push('Longest answers: ' + st.longest.map(e => `${label(e)} (${fmt(e.answer.ms)})`).join(', ') + '.');
+  if (st.top.length) notes.push('Most used fillers: ' + st.top.map(([k, n]) => `"${k}" ${n} times`).join(', ') + '.');
+  if (st.n && !st.words) notes.push('No transcript was captured. Your recording has the full audio.');
+  $('#sumnote').textContent = notes.join(' ');
+  $('#txo').textContent = transcript();
+  $('#dlV').hidden = !(recBlob && recBlob.size);
+  $('#summary').classList.remove('hidden');
+}
+
+/* ---------- helpers ---------- */
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000); }
+async function copyText(text, flashEl) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    ta.remove();
+  }
+  flashEl.textContent = ok ? 'Copied. Paste it into Claude or another AI assistant.' : 'Copy was blocked. Use Download transcript instead.';
+  setTimeout(() => { flashEl.textContent = ''; }, 4500);
+}
+function setPhoto(who, file) {
+  const tile = $(PANEL[who].tile), img = tile.querySelector('.photo');
+  if (img.dataset.url) { URL.revokeObjectURL(img.dataset.url); delete img.dataset.url; }
+  if (!file) { img.removeAttribute('src'); tile.classList.remove('has-photo'); return; }
+  const url = URL.createObjectURL(file); img.src = url; img.dataset.url = url; tile.classList.add('has-photo');
+}
+function showLast() { let t = null; try { t = localStorage.getItem('ipr:last'); } catch (e) {} $('#lastCopy').hidden = !t; }
+function resetRoom() {
+  Object.assign(S, { started: false, ended: false, phase: 'lobby', cur: null, finalText: '', interim: '' });
+  $('#qsec').textContent = 'Set-up'; $('#qnum').textContent = ''; $('#qwho').textContent = 'The panel joins when you’re ready.'; $('#qtext').textContent = 'Choose the interview, add your CV, then join.';
+  $('#topsec').textContent = 'Set-up'; $('#topq').textContent = ''; $('#elapsed').textContent = '0:00'; $('#qbar').style.width = '0';
+  renderLive(); srNote(''); setStatus('', 'Not started'); updateButtons();
+}
+function closeAsk() { $('#askdlg').classList.add('hidden'); }
+
+/* ---------- wiring ---------- */
+(function books() {
+  const cols = ['#8c3b3b', '#3b5a8c', '#c9a24a', '#4f6b55', '#6b4c8c', '#d8d2c4', '#2f3e4e', '#a0522d', '#7a8a99'];
+  let seed = 7, out = '';
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (const y of [16, 62, 108]) {
+    let x = 234;
+    while (x < 304) {
+      const w = 4 + Math.floor(rnd() * 5), h = 24 + Math.floor(rnd() * 12);
+      if (x + w > 307) break;
+      out += `<rect x="${x}" y="${y + 38 - h}" width="${w}" height="${h}" fill="${cols[Math.floor(rnd() * cols.length)]}"/>`;
+      x += w + (rnd() < 0.15 ? 3 : 1);
+    }
+  }
+  $('#books').innerHTML = out;
+})();
+setType(loadSettings());
+showLast();
+if (HAS_TTS) { fillVoices(); speechSynthesis.addEventListener('voiceschanged', fillVoices); } else fillVoices();
+setTimeout(() => { if (!voices.length) $('#vHr').innerHTML = $('#vOd').innerHTML = '<option value="">Browser default voice</option>'; }, 3000);
+initMedia();
+if (IS_FILE) { $('#fileWarn').hidden = false; $('#localUrl').textContent = 'http://localhost:8000/' + decodeURIComponent(location.pathname.split('/').pop() || ''); }
+$('#testSR').addEventListener('click', () => {
+  const out = $('#srTest'), btn = $('#testSR');
+  const show = (t, cls) => { out.textContent = t; out.className = 'srtest' + (cls ? ' ' + cls : ''); };
+  if (testRec) { try { testRec.stop(); } catch (e) {} return; }
+  if (!SR) { show('This browser has no speech-to-text. Use Chrome or Edge.', 'err'); return; }
+  let r;
+  try { r = new SR(); } catch (e) { show('Speech-to-text couldn’t start in this browser.', 'err'); return; }
+  testRec = r;
+  let fin = '', heard = '', failed = false;
+  r.lang = $('#lang').value; r.continuous = true; r.interimResults = true;
+  const stopAt = setTimeout(() => { try { r.stop(); } catch (e) {} }, 12000);
+  r.onresult = ev => {
+    let inter = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) fin += t + ' '; else inter += t; }
+    heard = (fin + inter).trim();
+    if (heard) show('Heard: ' + heard);
+  };
+  r.onerror = ev => { failed = true; show(ev.error === 'no-speech' ? 'No speech came through. Check the mic bar moves when you talk, then test again.' : srError(ev.error), 'err'); };
+  r.onend = () => { clearTimeout(stopAt); testRec = null; btn.textContent = 'Test transcript'; if (heard) show('Transcript works. Heard: ' + heard, 'ok'); else if (!failed) show('Nothing came through. Test again and say a full sentence.', 'err'); };
+  btn.textContent = 'Stop test';
+  show('Listening for up to 12 seconds. Say a sentence…');
+  try { r.start(); } catch (e) { clearTimeout(stopAt); testRec = null; btn.textContent = 'Test transcript'; show('Speech-to-text couldn’t start. Reload the page and try again.', 'err'); }
+});
+
+$$('input[name=itype]').forEach(r => r.addEventListener('change', () => { if (r.checked) { setType(r.value); saveSettings(); } }));
+$('#cvFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  setCvStat(`Reading ${f.name}…`);
+  try {
+    const n = f.name.toLowerCase();
+    let text;
+    if (n.endsWith('.pdf') || f.type === 'application/pdf') text = await pdfText(await f.arrayBuffer());
+    else if (n.endsWith('.docx')) text = await docxText(await f.arrayBuffer());
+    else if (n.endsWith('.doc')) throw new Error('Old .doc files can’t be read here. Save it as .docx or PDF.');
+    else text = await f.text();
+    useCV(text, f.name);
+  } catch (err) {
+    setCvStat(`${err && err.message ? err.message : 'Couldn’t read that file.'} You can paste your CV text instead.`, true);
+    $('#pasteBox').open = true;
+  }
+});
+$('#cvUse').addEventListener('click', () => { const t = $('#cvPaste').value; if (t.trim()) useCV(t, 'your pasted text'); else $('#cvPaste').focus(); });
+$('#cvClear').addEventListener('click', () => { CV = null; $('#cvFile').value = ''; $('#cvPaste').value = ''; buildSections(); setCvStat('CV removed. The panel will skip questions about your own experience.'); });
+$('#company').addEventListener('change', () => { buildSections(); saveSettings(); });
+$('#role').addEventListener('change', () => { buildSections(); saveSettings(); });
+$('#name').addEventListener('change', saveSettings);
+$('#lang').addEventListener('change', saveSettings);
+$('#extra').addEventListener('input', () => { clearTimeout(extraTimer); extraTimer = setTimeout(buildSections, 500); });
+$('#shuffle').addEventListener('click', () => { redraw(); buildSections(); });
+$('#selAll').addEventListener('click', () => { S.off.clear(); for (const s of S.sections) { s.on = true; s.qs.forEach(q => { q.on = true; }); } renderPreview(); });
+$('#plist').addEventListener('change', ev => {
+  const i = ev.target;
+  if (!i.matches('input[type=checkbox]')) return;
+  const s = S.sections[+i.dataset.s];
+  if (!s) return;
+  const mark = q => { if (q.on) S.off.delete(q.q); else S.off.add(q.q); };
+  if (i.dataset.q === undefined) { s.qs.forEach(q => { q.on = i.checked; mark(q); }); }
+  else { const q = s.qs[+i.dataset.q]; q.on = i.checked; mark(q); }
+  s.on = s.qs.some(q => q.on);
+  renderPreview();
+});
+$('#retry').addEventListener('click', initMedia);
+$('#optFollow').addEventListener('change', updateEst);
+$('#pHr').addEventListener('change', e => setPhoto('hr', e.target.files[0]));
+$('#pOd').addEventListener('change', e => setPhoto('od', e.target.files[0]));
+$('#resetP').addEventListener('click', () => { setPhoto('hr', null); setPhoto('od', null); $('#pHr').value = ''; $('#pOd').value = ''; });
+$('#optMirror').addEventListener('change', e => { $('#cam').classList.toggle('mirror', e.target.checked); $('#pv').classList.toggle('mirror', e.target.checked); });
+$('#testV').addEventListener('click', async () => {
+  S.rate = +$('#optRate').value; S.voice = { hr: voiceBy($('#vHr').value), od: voiceBy($('#vOd').value) };
+  hush(); run++;
+  await speak('hr', "Hello, I'm Ananya.");
+  await speak('od', "And I'm Arjun. We'll be your panel today.");
+});
+$('#lastCopy').addEventListener('click', () => { let t = ''; try { t = localStorage.getItem('ipr:last') || ''; } catch (e) {} if (t) copyText(t, $('#lobbyFlash')); });
+$('#join').addEventListener('click', () => {
+  S.name = $('#name').value.trim(); S.company = $('#company').value.trim(); S.roleName = $('#role').value.trim();
+  S.followups = $('#optFollow').checked; S.srOn = $('#optSR').checked;
+  S.cutAt = +$('#optCut').value; S.lang = $('#lang').value; S.rate = +$('#optRate').value;
+  S.voice = { hr: voiceBy($('#vHr').value), od: voiceBy($('#vOd').value) };
+  S.plan = [];
+  for (const s of S.sections) for (const q of s.qs) if (q.on) S.plan.push(Object.assign({}, q, { sid: s.id, section: s.title, pi: 0, heur: false, skipRest: false }));
+  S.customMode = !S.plan.length;
+  Object.assign(S, { entries: [], mi: -1, customQ: [], cur: null, lastAnswered: null, lastAsker: null, started: true, ended: false, srBlocked: false, srWorked: false, t1: 0, phase: 'transition' });
+  S.t0 = performance.now(); S.startedAt = Date.now(); recT0 = 0;
+  $('#myname').textContent = S.name ? S.name + ' (you)' : 'You'; $('#initials').textContent = S.name ? S.name.charAt(0).toUpperCase() : 'You';
+  if (testRec) { try { testRec.abort(); } catch (e) {} testRec = null; $('#testSR').textContent = 'Test transcript'; }
+  $('#lobby').classList.add('hidden');
+  srNote(!S.srOn ? '' : !SR ? 'Live transcript needs Chrome or Edge. The interview still runs, and the recording keeps your answers.' : IS_FILE ? 'This page is open as a file, so the browser will probably block the live transcript. The recording still keeps your answers.' : '');
+  $('#topq').textContent = S.plan.length ? `Q 0/${S.plan.length}` : '';
+  $('#qbar').style.width = '0';
+  if (actx && actx.state === 'suspended') actx.resume();
+  hush();
+  if ($('#optRec').checked) startRecording(); else { mr = null; recBlob = null; }
+  saveSettings();
+  updateButtons();
+  greet();
+});
+
+$('#bDone').addEventListener('click', () => finishAnswer());
+$('#bRepeat').addEventListener('click', () => repeat());
+$('#bSkip').addEventListener('click', () => skip());
+$('#bMic').addEventListener('click', () => {
+  S.micOn = !S.micOn;
+  if (stream) stream.getAudioTracks().forEach(t => { t.enabled = S.micOn; });
+  const b = $('#bMic'); b.textContent = S.micOn ? 'Mic on' : 'Mic off'; b.setAttribute('aria-pressed', String(S.micOn)); b.classList.toggle('off', !S.micOn);
+  $('#micoff').hidden = S.micOn;
+  if (S.phase === 'answering') { if (S.micOn) startListening(false); else stopListening(); }
+});
+$('#bCam').addEventListener('click', () => {
+  S.camOn = !S.camOn;
+  if (stream) stream.getVideoTracks().forEach(t => { t.enabled = S.camOn; });
+  const b = $('#bCam'); b.textContent = S.camOn ? 'Camera on' : 'Camera off'; b.setAttribute('aria-pressed', String(S.camOn)); b.classList.toggle('off', !S.camOn);
+  $('#camoff').hidden = S.camOn && !!(stream && stream.getVideoTracks().length);
+});
+$('#bAsk').addEventListener('click', () => { $('#askdlg').classList.remove('hidden'); setTimeout(() => $('#askq').focus(), 30); });
+$('#askCancel').addEventListener('click', closeAsk);
+$('#askGo').addEventListener('click', () => {
+  const q = $('#askq').value.trim();
+  if (!q) { $('#askq').focus(); return; }
+  S.customQ.push(mk('custom', $('#askby').value, q, null));
+  $('#askq').value = ''; closeAsk();
+  if (S.phase === 'answering') finishAnswer();
+  else if (S.phase === 'idle') next();
+});
+$('#bEnd').addEventListener('click', () => {
+  const b = $('#bEnd');
+  if (endArm && Date.now() - endArm < 3000) { endArm = 0; b.textContent = 'End interview'; endInterview(); return; }
+  endArm = Date.now(); b.textContent = 'Click again to end';
+  setTimeout(() => { if (endArm && Date.now() - endArm >= 2900) { endArm = 0; b.textContent = 'End interview'; } }, 3000);
+});
+$('#copyT').addEventListener('click', () => copyText(assessPrompt() + transcript(), $('#sumFlash')));
+$('#dlT').addEventListener('click', () => download(new Blob([transcript()], { type: 'text/plain' }), `mock-interview-${stamp()}.txt`));
+$('#dlV').addEventListener('click', () => { if (recBlob) download(recBlob, `mock-interview-${stamp()}.${/mp4/.test(recBlob.type) ? 'mp4' : 'webm'}`); });
+$('#again').addEventListener('click', () => { $('#summary').classList.add('hidden'); resetRoom(); redraw(); buildSections(); $('#lobby').classList.remove('hidden'); showLast(); });
+
+document.addEventListener('pointerdown', () => { if (actx && actx.state === 'suspended') actx.resume(); });
+document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('.bar button'); if (b) b.blur(); });
+document.addEventListener('keydown', ev => {
+  const t = ev.target, tag = (t && t.tagName || '').toLowerCase();
+  if (!$('#askdlg').classList.contains('hidden')) {
+    if (ev.key === 'Escape') closeAsk();
+    else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) $('#askGo').click();
+    return;
+  }
+  if (['input', 'textarea', 'select', 'button'].includes(tag) || (t && t.isContentEditable)) return;
+  if (!S.started || S.ended) return;
+  if (ev.code === 'Space') { ev.preventDefault(); if (S.phase === 'answering') finishAnswer(); }
+  else if ((ev.key === 'r' || ev.key === 'R') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) repeat();
+});
+setInterval(() => {
+  if (!S.started || S.ended) return;
+  $('#elapsed').textContent = fmt(performance.now() - S.t0);
+  if (S.phase === 'answering') {
+    const ms = performance.now() - S.ansStart, el = $('#atimer'), e = S.cur;
+    el.textContent = fmt(ms);
+    el.className = 'timer' + (ms > 180000 ? ' over' : ms > 120000 ? ' warn' : '');
+    if (S.cutAt && ms > S.cutAt * 1000 && e && e.kind !== 'interrupt' && !e.cutDone) { e.cutDone = true; finishAnswer('cut'); }
+  }
+}, 250);
+updateButtons();
+}
+</script>
+</body>
+</html>
